@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="theme-color" content="#1e293b" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="favicon-32.png" sizes="32x32" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="WK Connect" />
+<link rel="stylesheet" href="leaflet/leaflet.css" />
+<title>WK Connect Survey</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root { --sky:#0284c7; --sky2:#0ea5e9; --slate:#1e293b; --line:#e2e8f0; --muted:#64748b; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#f1f5f9; color:#1e293b; }
+  header { position:sticky; top:0; z-index:20; background:var(--slate); color:#fff; box-shadow:0 1px 6px rgba(0,0,0,.15); }
+  .bar { max-width:760px; margin:0 auto; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .bar h1 { font-size:16px; margin:0; font-weight:600; }
+  .csvbtn { background:var(--sky); color:#fff; border:none; padding:7px 12px; border-radius:9px; font-size:14px; font-weight:600; }
+  .tabs { max-width:760px; margin:0 auto; padding:0 16px; display:flex; gap:4px; }
+  .tab { background:none; border:none; border-bottom:2px solid transparent; color:#94a3b8; padding:10px 12px; font-size:14px; font-weight:600; }
+  .tab.active { color:#fff; border-color:var(--sky2); }
+  main { max-width:760px; margin:0 auto; padding:16px 16px 120px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,.04); overflow:hidden; margin-bottom:16px; }
+  .card > h2 { font-size:13px; margin:0; padding:11px 16px; background:#f8fafc; border-bottom:1px solid var(--line); font-weight:600; color:#334155; }
+  .grid { padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .full { grid-column:1 / -1; }
+  label { display:block; }
+  label span { display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px; }
+  input, select, textarea { width:100%; padding:9px 11px; border:1px solid #cbd5e1; border-radius:9px; font-size:14px; background:#fff; }
+  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--sky2); box-shadow:0 0 0 3px rgba(14,165,233,.2); }
+  textarea { resize:none; }
+  .crsnote { grid-column:1/-1; font-size:11px; color:#475569; background:#f0f9ff; border:1px solid #e0f2fe; border-radius:9px; padding:8px 10px; margin-bottom:-2px; }
+  .gpsbtn { grid-column:1/-1; border:none; color:#fff; background:var(--slate); padding:11px; border-radius:9px; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .gpsbtn.tracking { background:#d97706; }
+  .gpsbtn.done { background:#334155; }
+  .prec { grid-column:1/-1; margin-top:-2px; }
+  .prec .row { display:flex; justify-content:space-between; font-size:12px; }
+  .prec b.good{color:#059669} .prec b.fair{color:#d97706} .prec b.poor{color:#e11d48}
+  .track { height:6px; background:#e2e8f0; border-radius:99px; overflow:hidden; margin-top:5px; }
+  .track > div { height:100%; border-radius:99px; transition:width .3s; }
+  .fill-good{background:#10b981}.fill-fair{background:#f59e0b}.fill-poor{background:#f43f5e}
+  .hint { font-size:11px; color:#94a3b8; margin-top:5px; }
+  .warn { grid-column:1/-1; font-size:12px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; border-radius:9px; padding:9px 11px; }
+  .counter { text-align:center; font-size:12px; color:#94a3b8; }
+  .savebar { position:fixed; bottom:0; left:0; right:0; z-index:20; background:rgba(255,255,255,.96); backdrop-filter:blur(6px); border-top:1px solid var(--line); }
+  .savebar .in { max-width:760px; margin:0 auto; padding:12px 16px; display:flex; gap:12px; }
+  .savebar button { padding:13px; border-radius:11px; font-size:15px; font-weight:600; border:none; }
+  .clear { background:#fff; border:1px solid #cbd5e1 !important; color:#475569; }
+  .save { flex:1; background:var(--sky); color:#fff; }
+  .search { position:relative; margin-bottom:16px; }
+  .search input { padding-left:12px; }
+  .rec { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; display:flex; justify-content:space-between; gap:12px; }
+  .rec .sn { font-family:ui-monospace,monospace; font-size:12px; background:#f1f5f9; border-radius:5px; padding:1px 6px; color:#475569; }
+  .rec .nm { font-weight:600; }
+  .rec .ph { font-size:11px; background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; border-radius:5px; padding:1px 6px; }
+  .rec .meta { margin-top:6px; font-size:12px; color:#64748b; display:grid; grid-template-columns:1fr 1fr; gap:2px 12px; }
+  .rec .meta .w { grid-column:1/-1; }
+  .acc-good{color:#059669}.acc-fair{color:#d97706}.acc-poor{color:#e11d48}
+  .rec .acts { display:flex; flex-direction:column; gap:6px; }
+  .rec .acts button { border:none; background:none; padding:6px; border-radius:8px; font-size:13px; }
+  .edit { color:#475569; } .del { color:#e11d48; }
+  .empty { text-align:center; color:#94a3b8; padding:60px 0; }
+  .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); z-index:30; color:#fff; padding:9px 16px; border-radius:99px; font-size:13px; box-shadow:0 4px 12px rgba(0,0,0,.2); }
+  .toast.ok{background:#059669}.toast.err{background:#e11d48}
+  .hidden { display:none !important; }
+  /* map */
+  #mapWrap { position:relative; }
+  #map { width:100%; height:300px; border-radius:14px; border:1px solid var(--line); background:#e2e8f0; z-index:1; }
+  .mapctrls { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  .mapctrls button { border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:9px; padding:8px 12px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px; }
+  .mapctrls button.primary { background:var(--slate); color:#fff; border-color:var(--slate); }
+  .netpill { font-size:11px; padding:3px 9px; border-radius:99px; font-weight:600; }
+  .net-on{ background:#dcfce7; color:#166534; } .net-off{ background:#fee2e2; color:#991b1b; }
+  .dlbar { margin-top:10px; height:6px; background:#e2e8f0; border-radius:99px; overflow:hidden; }
+  .dlbar>div{ height:100%; background:var(--sky2); width:0%; transition:width .2s; }
+  .leaflet-popup-content { font-size:13px; line-height:1.5; }
+  .leaflet-popup-content b { color:#0f172a; }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>WK Connect Survey</h1>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="csvbtn" id="installBtn" style="display:none;background:#334155" onclick="doInstall()">⤓ Install</button>
+      <button class="csvbtn" onclick="exportXLSX()">⬇ Excel</button>
+      <button class="csvbtn" style="background:#475569" onclick="exportCSV()">CSV</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" id="tab-form" onclick="setView('form')">＋ New Entry</button>
+    <button class="tab" id="tab-list" onclick="setView('list')">☰ Records (<span id="count">0</span>)</button>
+  </div>
+</header>
+
+<div id="iosHint" class="hidden" style="max-width:760px;margin:0 auto;padding:10px 16px;">
+  <div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:11px;padding:10px 12px;font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:center">
+    <span>To install: tap <b>Share</b> ⬆︎, then <b>Add to Home Screen</b>.</span>
+    <button onclick="document.getElementById('iosHint').classList.add('hidden')" style="border:none;background:none;color:#1e40af;font-size:16px">✕</button>
+  </div>
+</div>
+
+<main>
+  <div id="entryView">
+    <div id="mapBlock">
+      <div class="mapctrls">
+        <button onclick="locateMe()">📍 My location</button>
+        <button onclick="fitPoints()">⤢ Fit points</button>
+        <button id="tapBtn" onclick="toggleTapToSet()">✋ Tap-to-set</button>
+        <button class="primary" id="dlBtn" onclick="saveAreaOffline()">⬇ Save area offline</button>
+        <span class="netpill" id="netPill">…</span>
+      </div>
+      <div id="mapWrap"><div id="map"></div></div>
+      <div class="dlbar hidden" id="dlbar"><div id="dlfill"></div></div>
+      <p class="hint" id="mapHint" style="margin:8px 0 16px">
+        <b>Drag the pin</b> to adjust the captured point, or tap <b>Tap-to-set</b> then tap the map to place it. X/Y update automatically. Layer switcher (top-right) toggles Satellite/Streets. Tap <b>Save area offline</b> while online to cache imagery for use with no signal.
+      </p>
+    </div>
+    <div id="formView"></div>
+  </div>
+  <div id="listView" class="hidden"></div>
+</main>
+
+<div class="savebar" id="savebar">
+  <div class="in">
+    <button class="clear" onclick="newEntry()">Clear</button>
+    <button class="save" id="saveBtn" onclick="saveRecord()">💾 Save &amp; Next</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="leaflet/leaflet.js"></script>
+<script src="rw-admin.js"></script>
+<script src="exceljs.min.js"></script>
+<script>
+"use strict";
+
+/* ---------- Field model ---------- */
+const SECTIONS = [
+  { title:"Identification", fields:[
+    {k:"serial",l:"Serial Number",full:true},
+    {k:"poles",l:"Poles"},
+    {k:"houseNo",l:"House No"} ]},
+  { title:"Customer", fields:[
+    {k:"firstName",l:"First Name"},{k:"lastName",l:"Last Name"},
+    {k:"idNumber",l:"ID Number",mode:"numeric"},{k:"phone",l:"Phone Number",type:"tel",mode:"tel"} ]},
+  { title:"Coordinates — TM Rwanda", gps:true, fields:[
+    {k:"x",l:"X · Easting (m)"},{k:"y",l:"Y · Northing (m)"} ]},
+  { title:"Connection", fields:[
+    {k:"meter",l:"Meter Number"},{k:"upi",l:"UPI Number"},
+    {k:"scLength",l:"SC Length (m)",mode:"decimal"},
+    {k:"category",l:"Category",sel:["Residential","Commercial","Industrial","Public Institution","Agriculture","Other"]},
+    {k:"transformer",l:"Transformer Name"},
+    {k:"phase",l:"Phase",sel:["1-Phase","3-Phase"]} ]},
+  { title:"Administrative Location", fields:[
+    {k:"district",l:"District",cascade:"district"},
+    {k:"sector",l:"Sector",cascade:"sector"},
+    {k:"cell",l:"Cell",cascade:"cell"},
+    {k:"village",l:"Village",cascade:"village"} ]},
+  { title:"Notes", fields:[{k:"comment",l:"Comment",area:true,full:true}] },
+];
+const FIELDS = SECTIONS.flatMap(s=>s.fields);
+const STICKY = ["category","transformer","phase","district","sector","cell","village"];
+const KEY = "asbuilt-records-v1";
+
+/* ---------- State ---------- */
+let records = load();
+let form = blank();
+let editingId = null;
+let view = "form";
+let accuracy = null, gpsState = "idle", watchId = null, best = Infinity;
+// Weighted-average accumulator for improved precision.
+let gpsAcc = { n:0, sumW:0, sumWlat:0, sumWlng:0, best:Infinity, pts:[], t0:0 };
+function resetGps(){ gpsAcc={ n:0, sumW:0, sumWlat:0, sumWlng:0, best:Infinity, pts:[], t0:0 }; best=Infinity; accuracy=null; }
+
+function blank(){ const o={}; FIELDS.forEach(f=>o[f.k]=""); return o; }
+function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; } }
+function persist(){ localStorage.setItem(KEY, JSON.stringify(records)); document.getElementById("count").textContent = records.length; }
+function nextSerial(){ const n=records.map(r=>parseInt(String(r.serial).replace(/\D/g,""),10)).filter(x=>!isNaN(x)); return n.length?Math.max(...n)+1:1; }
+
+/* ---------- TM Rwanda projection (WGS84 -> EPSG:4083) ---------- */
+function wgs84ToTMRwanda(lat, lon){
+  const a=6378137.0, f=1/298.257222101, e2=f*(2-f), ep2=e2/(1-e2);
+  const k0=0.9999, lon0=30*Math.PI/180, FE=500000, FN=5000000;
+  const phi=lat*Math.PI/180, lam=lon*Math.PI/180;
+  const sp=Math.sin(phi), cp=Math.cos(phi), tp=Math.tan(phi);
+  const N=a/Math.sqrt(1-e2*sp*sp), T=tp*tp, C=ep2*cp*cp, A=(lam-lon0)*cp;
+  const M=a*((1-e2/4-3*e2*e2/64-5*e2*e2*e2/256)*phi
+    -(3*e2/8+3*e2*e2/32+45*e2*e2*e2/1024)*Math.sin(2*phi)
+    +(15*e2*e2/256+45*e2*e2*e2/1024)*Math.sin(4*phi)
+    -(35*e2*e2*e2/3072)*Math.sin(6*phi));
+  const E=FE+k0*N*(A+(1-T+C)*A*A*A/6+(5-18*T+T*T+72*C-58*ep2)*Math.pow(A,5)/120);
+  const Nn=FN+k0*(M+N*tp*(A*A/2+(5-T+9*C+4*C*C)*Math.pow(A,4)/24
+    +(61-58*T+T*T+600*C-330*ep2)*Math.pow(A,6)/720));
+  return { e:E, n:Nn };
+}
+
+// Inverse: ITRF2005 / TM Rwanda (EPSG:4083) Easting/Northing -> WGS84 lat/long.
+function tmRwandaToWgs84(E, N){
+  const a=6378137.0, f=1/298.257222101, e2=f*(2-f), ep2=e2/(1-e2);
+  const k0=0.9999, lon0=30*Math.PI/180, FE=500000, FN=5000000;
+  const x=E-FE, y=N-FN, M=y/k0;
+  const mu=M/(a*(1-e2/4-3*e2*e2/64-5*e2*e2*e2/256));
+  const e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
+  const phi1=mu+(3*e1/2-27*e1*e1*e1/32)*Math.sin(2*mu)+(21*e1*e1/16-55*e1*e1*e1*e1/32)*Math.sin(4*mu)+(151*e1*e1*e1/96)*Math.sin(6*mu)+(1097*e1*e1*e1*e1/512)*Math.sin(8*mu);
+  const sp=Math.sin(phi1), cp=Math.cos(phi1), tp=Math.tan(phi1);
+  const C1=ep2*cp*cp, T1=tp*tp;
+  const N1=a/Math.sqrt(1-e2*sp*sp);
+  const R1=a*(1-e2)/Math.pow(1-e2*sp*sp,1.5);
+  const D=x/(N1*k0);
+  const phi=phi1-(N1*tp/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*ep2)*Math.pow(D,4)/24+(61+90*T1+298*C1+45*T1*T1-252*ep2-3*C1*C1)*Math.pow(D,6)/720);
+  const lon=lon0+(D-(1+2*T1+C1)*D*D*D/6+(5-2*C1+28*T1-3*C1*C1+8*ep2+24*T1*T1)*Math.pow(D,5)/120)/cp;
+  return { lat:phi*180/Math.PI, lon:lon*180/Math.PI };
+}
+function recLatLng(r){
+  if(r.lat!=null && r.lng!=null) return [r.lat, r.lng];
+  const e=parseFloat(r.x), n=parseFloat(r.y);
+  if(isNaN(e)||isNaN(n)) return null;
+  const p=tmRwandaToWgs84(e,n); return [p.lat, p.lon];
+}
+
+/* ---------- Build form once ---------- */
+function buildForm(){
+  const host = document.getElementById("formView");
+  host.innerHTML = "";
+  // secure-context warning
+  const secure = window.isSecureContext || location.hostname==="localhost";
+  SECTIONS.forEach(sec=>{
+    const card=document.createElement("div"); card.className="card";
+    const h=document.createElement("h2"); h.textContent=sec.title; card.appendChild(h);
+    const g=document.createElement("div"); g.className="grid";
+    if(sec.gps){
+      const note=document.createElement("div"); note.className="crsnote";
+      note.innerHTML="CRS: ITRF2005 / TM Rwanda (EPSG:4083). Values in metres. GPS is auto-converted from WGS84.";
+      g.appendChild(note);
+    }
+    sec.fields.forEach(f=>{
+      const wrap=document.createElement("div"); if(f.full||f.area) wrap.className="full";
+      const lab=document.createElement("label");
+      const sp=document.createElement("span"); sp.textContent=f.l; lab.appendChild(sp);
+      let el;
+      if(f.cascade){ el=document.createElement("select");
+        el.innerHTML='<option value="">— select —</option>';
+        el.id="fld-"+f.k;
+        el.addEventListener("change",()=>{ form[f.k]=el.value; onCascadeChange(f.cascade); });
+        lab.appendChild(el); wrap.appendChild(lab); g.appendChild(wrap); return;
+      }
+      if(f.sel){ el=document.createElement("select");
+        el.innerHTML='<option value="">— select —</option>'+f.sel.map(o=>`<option>${o}</option>`).join(""); }
+      else if(f.area){ el=document.createElement("textarea"); el.rows=3; }
+      else { el=document.createElement("input"); if(f.type)el.type=f.type; if(f.mode)el.inputMode=f.mode; }
+      el.id="fld-"+f.k;
+      el.addEventListener("input",()=>{ form[f.k]=el.value;
+        if(f.k==="x"||f.k==="y"){ form.lat=null; form.lng=null; form.manual=true;
+          const e=parseFloat(form.x), n=parseFloat(form.y);
+          if(isFinite(e)&&isFinite(n)){ const g=tmRwandaToWgs84(e,n); form.lat=g.lat; form.lng=g.lon; if(map) setActivePoint(g.lat,g.lon,null,true); }
+          accuracy=null; renderPrecision();
+        }
+      });
+      lab.appendChild(el); wrap.appendChild(lab); g.appendChild(wrap);
+    });
+    if(sec.gps){
+      if(!secure){
+        const w=document.createElement("div"); w.className="warn";
+        w.textContent="⚠ GPS needs HTTPS. Open this page over https:// (see hosting note) to enable automatic capture.";
+        g.appendChild(w);
+      }
+      const btn=document.createElement("button"); btn.className="gpsbtn"; btn.id="gpsBtn";
+      btn.textContent="📍 Capture GPS → TM Rwanda"; btn.onclick=captureGPS;
+      g.appendChild(btn);
+      const prec=document.createElement("div"); prec.className="prec hidden"; prec.id="prec";
+      prec.innerHTML='<div class="row"><span style="color:#64748b">Precision</span><b id="precTxt"></b></div>'
+        +'<div class="track"><div id="precBar"></div></div><div class="hint hidden" id="precHint"></div>';
+      g.appendChild(prec);
+    }
+    card.appendChild(g); host.appendChild(card);
+  });
+  const c=document.createElement("div"); c.className="counter"; c.id="counter"; host.appendChild(c);
+  writeForm();
+}
+
+function writeForm(){
+  FIELDS.forEach(f=>{ if(f.cascade) return; const el=document.getElementById("fld-"+f.k); if(el) el.value=form[f.k]||""; });
+  syncCascade();
+  const c=document.getElementById("counter");
+  const filled=FIELDS.filter(f=>String(form[f.k]||"").trim()).length;
+  if(c) c.textContent=filled+" of "+FIELDS.length+" fields filled";
+  document.getElementById("saveBtn").textContent = editingId ? "💾 Update Record" : "💾 Save & Next";
+  renderPrecision();
+}
+
+/* ---------- Cascading administrative selects (District→Sector→Cell→Village) ---------- */
+const ADMIN = (typeof window!=="undefined" && window.RW_ADMIN) ? window.RW_ADMIN : {};
+function fillSelect(key, options, current){
+  const el=document.getElementById("fld-"+key); if(!el) return;
+  const opts=(options||[]).slice().sort((a,b)=>a.localeCompare(b));
+  el.innerHTML='<option value="">— select —</option>'+opts.map(o=>'<option'+(o===current?' selected':'')+'>'+o.replace(/</g,"&lt;")+'</option>').join("");
+  // If the saved value isn't in the list (dataset gap), keep it as a selected option.
+  if(current && !opts.includes(current)){
+    el.innerHTML+='<option selected>'+current.replace(/</g,"&lt;")+'</option>';
+  }
+  el.value=current||"";
+}
+function districtsList(){ return Object.keys(ADMIN); }
+function sectorsList(d){ return d&&ADMIN[d]?Object.keys(ADMIN[d]):[]; }
+function cellsList(d,s){ return d&&s&&ADMIN[d]&&ADMIN[d][s]?Object.keys(ADMIN[d][s]):[]; }
+function villagesList(d,s,c){ return d&&s&&c&&ADMIN[d]&&ADMIN[d][s]&&ADMIN[d][s][c]?ADMIN[d][s][c]:[]; }
+
+// Rebuild all four selects from current form values (used on load/edit/carry).
+function syncCascade(){
+  fillSelect("district", districtsList(), form.district);
+  fillSelect("sector", sectorsList(form.district), form.sector);
+  fillSelect("cell", cellsList(form.district, form.sector), form.cell);
+  fillSelect("village", villagesList(form.district, form.sector, form.cell), form.village);
+}
+// A parent changed → clear and repopulate its children.
+function onCascadeChange(level){
+  if(level==="district"){ form.sector=""; form.cell=""; form.village="";
+    fillSelect("sector", sectorsList(form.district), ""); fillSelect("cell", [], ""); fillSelect("village", [], ""); }
+  else if(level==="sector"){ form.cell=""; form.village="";
+    fillSelect("cell", cellsList(form.district, form.sector), ""); fillSelect("village", [], ""); }
+  else if(level==="cell"){ form.village="";
+    fillSelect("village", villagesList(form.district, form.sector, form.cell), ""); }
+  const c=document.getElementById("counter");
+  if(c){ const filled=FIELDS.filter(f=>String(form[f.k]||"").trim()).length; c.textContent=filled+" of "+FIELDS.length+" fields filled"; }
+}
+
+/* ---------- GPS (single-shot, like WK ASB Customer) ---------- */
+function stopGPS(){ if(watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; } }
+function captureGPS(){
+  if(!navigator.geolocation){ toast("Geolocation not available on this device","err"); return; }
+  form.manual=false; gpsState="tracking"; renderGpsBtn(); renderPrecision();
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude, lng=pos.coords.longitude, acc=pos.coords.accuracy;
+    accuracy=acc; best=acc; gpsAcc.n=1;
+    const t=wgs84ToTMRwanda(lat,lng);
+    form.x=t.e.toFixed(2); form.y=t.n.toFixed(2); form.lat=lat; form.lng=lng;
+    const fx=document.getElementById("fld-x"), fy=document.getElementById("fld-y");
+    if(fx) fx.value=form.x; if(fy) fy.value=form.y;
+    gpsState="done"; renderGpsBtn();
+    showCaptureMarker(lat,lng,acc);
+    renderPrecision();
+    toast("GPS fixed · ±"+Math.round(acc)+" m","ok");
+  }, err=>{
+    gpsState="idle"; renderGpsBtn();
+    toast(err.code===1?"Allow location for this site":err.code===3?"GPS timed out — try open sky":"GPS error: "+(err.message||"no fix"),"err");
+  }, { enableHighAccuracy:true, timeout:20000, maximumAge:0 });
+}
+function haversine(a1,o1,a2,o2){
+  const R=6371000, dLat=(a2-a1)*Math.PI/180, dLon=(o2-o1)*Math.PI/180;
+  const s=Math.sin(dLat/2)**2+Math.cos(a1*Math.PI/180)*Math.cos(a2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function grade(a){ return a==null?null : a<=5?"good" : a<=15?"fair" : "poor"; }
+function renderGpsBtn(){
+  const b=document.getElementById("gpsBtn"); if(!b) return;
+  b.className="gpsbtn"+(gpsState==="tracking"?" tracking":gpsState==="done"?" done":"");
+  b.textContent = gpsState==="tracking" ? "⏳ Acquiring…"
+    : gpsState==="done" ? "📍 Re-capture GPS → TM Rwanda" : "📍 Capture GPS → TM Rwanda";
+}
+function renderPrecision(){
+  const p=document.getElementById("prec"); if(!p) return;
+  const t=document.getElementById("precTxt"), bar=document.getElementById("precBar"), h=document.getElementById("precHint");
+  if(form.manual){                       // point placed/edited by hand
+    p.classList.remove("hidden");
+    t.className=""; t.style.color="#2563eb"; t.textContent="📍 Manual — placed on map";
+    bar.className="fill-fair"; bar.style.width="100%";
+    h.classList.remove("hidden"); h.textContent="Coordinates set by hand on the map. Drag the pin to fine-tune, or re-capture GPS.";
+    return;
+  }
+  t.style.color="";
+  if(accuracy==null){ p.classList.add("hidden"); return; }
+  p.classList.remove("hidden");
+  const g=grade(accuracy);
+  t.className=g; t.textContent="±"+Math.round(accuracy)+" m · "+(g==="good"?"Good":g==="fair"?"Fair":"Poor");
+  bar.className="fill-"+g; bar.style.width=Math.max(6,Math.min(100,(5/accuracy)*100))+"%";
+  h.classList.remove("hidden");
+  if(gpsState==="tracking") h.textContent="Acquiring GPS fix…";
+  else if(gpsState==="done") h.textContent = g==="good" ? "Fixed. Drag the pin to fine-tune if needed." : "Fixed. Move to open sky and re-capture, or drag the pin.";
+  else h.classList.add("hidden");
+}
+
+/* ---------- Actions ---------- */
+function newEntry(){ stopGPS(); if(map) clearCaptureMarker(); form=blank(); form.serial=String(nextSerial()); editingId=null; resetGps(); gpsState="idle"; renderGpsBtn(); writeForm(); setView("form"); }
+function editRecord(id){ stopGPS(); if(map) clearCaptureMarker(); const r=records.find(x=>x._id===id); form=Object.assign(blank(),r); editingId=id; resetGps(); if(r.accuracy!=null){ accuracy=r.accuracy; best=r.accuracy; gpsAcc.n=r.samples||1; } gpsState=r.accuracy!=null?"done":"idle"; renderGpsBtn(); writeForm(); setView("form"); const ll=recLatLng(r); if(map&&ll){ setTimeout(()=>{ map.invalidateSize(); setActivePoint(ll[0],ll[1], r.accuracy, !!r.manual); map.setView(ll,18); }, 80); } }
+function saveRecord(){
+  if(!form.serial && !form.firstName && !form.lastName){ toast("Enter at least a serial or a name","err"); return; }
+  const acc = accuracy!=null ? Number(accuracy.toFixed(1)) : null;
+  const nfix = gpsAcc.n || (editingId ? undefined : 0);
+  if(editingId){
+    records = records.map(r=> r._id===editingId ? Object.assign({},form,{accuracy:acc,samples:gpsAcc.n||r.samples,_id:editingId}) : r);
+    persist(); toast("Record updated","ok"); renderList(); if(markerLayer) drawMarkers(); setView("list");
+  } else {
+    const rec=Object.assign({},form,{accuracy:acc,samples:nfix,_id:Date.now()+"-"+Math.random().toString(36).slice(2,7)});
+    records.push(rec); persist(); toast("Record saved","ok");
+    const carried={}; STICKY.forEach(k=>carried[k]=form[k]);
+    form=Object.assign(blank(),carried); form.serial=String(nextSerial());
+    editingId=null; resetGps(); gpsState="idle"; renderGpsBtn(); writeForm(); renderList(); if(map){ clearCaptureMarker(); drawMarkers(); }
+  }
+}
+function removeRecord(id){ records=records.filter(r=>r._id!==id); persist(); renderList(); if(markerLayer) drawMarkers(); toast("Record deleted","ok"); }
+
+/* ---------- List ---------- */
+function renderList(filter){
+  const host=document.getElementById("listView");
+  const q=(document.getElementById("q")?document.getElementById("q").value:"").toLowerCase();
+  const shown = q ? records.filter(r=>FIELDS.some(f=>String(r[f.k]||"").toLowerCase().includes(q))) : records;
+  let html='<div class="search"><input id="q" placeholder="Search name, meter, UPI, village…" oninput="renderList()" value="'+escapeAttr(q)+'"></div>';
+  if(shown.length===0){
+    html+='<div class="empty">'+(records.length?"No matches.":"No records yet. Add one from New Entry.")+'</div>';
+  } else {
+    shown.forEach(r=>{
+      const name=[r.firstName,r.lastName].filter(Boolean).join(" ")||"Unnamed";
+      const ac=r.accuracy!=null?('<span class="acc-'+grade(r.accuracy)+'"> (±'+r.accuracy+' m)</span>'):"";
+      const xy=(r.x||r.y)?('<span class="w">E/N: '+(r.x||"—")+", "+(r.y||"—")+ac+'</span>'):"";
+      html+='<div class="rec"><div><div>'
+        +'<span class="sn">#'+(r.serial||"—")+'</span> <span class="nm">'+esc(name)+'</span> '
+        +(r.phase?'<span class="ph">'+esc(r.phase)+'</span>':'')
+        +'</div><div class="meta">'
+        +(r.meter?'<span>Meter: '+esc(r.meter)+'</span>':'')
+        +(r.upi?'<span>UPI: '+esc(r.upi)+'</span>':'')
+        +(r.transformer?'<span>TX: '+esc(r.transformer)+'</span>':'')
+        +(r.village?'<span>Vill: '+esc(r.village)+'</span>':'')
+        +xy+'</div></div>'
+        +'<div class="acts"><button class="edit" onclick="editRecord(\''+r._id+'\')">✎ Edit</button>'
+        +'<button class="del" onclick="removeRecord(\''+r._id+'\')">🗑 Del</button></div></div>';
+    });
+  }
+  host.innerHTML=html;
+  if(q){ const inp=document.getElementById("q"); inp.focus(); inp.setSelectionRange(q.length,q.length); }
+}
+
+/* ---------- View switch ---------- */
+function setView(v){
+  view=v;
+  document.getElementById("entryView").classList.toggle("hidden", v!=="form");
+  document.getElementById("listView").classList.toggle("hidden", v!=="list");
+  document.getElementById("savebar").classList.toggle("hidden", v!=="form");
+  document.getElementById("tab-form").classList.toggle("active", v==="form");
+  document.getElementById("tab-list").classList.toggle("active", v==="list");
+  if(v==="list"){ stopGPS(); if(gpsState==="tracking"){ gpsState=gpsAcc.n>0?"done":"idle"; renderGpsBtn(); } renderList(); }
+  else { updateNet(); initMap(); drawMarkers(); if(map) setTimeout(()=>{ map.invalidateSize(); }, 60); }
+}
+
+/* ---------- Excel export (matches RESERVE.xlsx template) ---------- */
+async function exportXLSX(){
+  if(!records.length){ toast("No records to export","err"); return; }
+  if(typeof ExcelJS==="undefined"){ toast("Excel library not loaded","err"); return; }
+  try{
+    const resp=await fetch("reserve-template.xlsx");
+    const buf=await resp.arrayBuffer();
+    const wb=new ExcelJS.Workbook(); await wb.xlsx.load(buf);
+    const ws=wb.worksheets[0];
+    const START=6, LASTFMT=25;            // template has borders on rows 6..25
+    const tmpl=ws.getRow(START);
+    const clone=st=>{ try{ return JSON.parse(JSON.stringify(st)); }catch(e){ return {}; } };
+    // Add X/Y header columns (S=19, T=20), styled to match column R header.
+    try{ ws.mergeCells("S4:S5"); ws.mergeCells("T4:T5"); }catch(e){}
+    const hStyle=clone(ws.getCell("R4").style);
+    ws.getCell("S4").style=clone(hStyle); ws.getCell("S4").value="X (Easting)";
+    ws.getCell("T4").style=clone(hStyle); ws.getCell("T4").value="Y (Northing)";
+    ws.getColumn(19).width=14; ws.getColumn(20).width=14;
+    records.forEach((r,i)=>{
+      const rn=START+i, row=ws.getRow(rn);
+      if(rn>LASTFMT){                       // extend template styling to extra rows
+        for(let c=1;c<=18;c++){ try{ row.getCell(c).style=clone(tmpl.getCell(c).style); }catch(e){} }
+        row.height=tmpl.height;
+      }
+      const set=(c,v)=>{ row.getCell(c).value=(v===undefined||v===null||v==="")?null:v; };
+      const num=v=>{ const n=parseFloat(v); return isFinite(n)?n:(v||null); };
+      set(1, num(r.serial)||(i+1));
+      set(2, r.poles); set(3, r.houseNo);
+      set(4, r.firstName); set(5, r.lastName);
+      set(6, r.idNumber); set(7, r.phone);
+      set(8, r.meter); set(9, r.upi);
+      set(10, num(r.scLength));
+      const resid=/resid/i.test(r.category||"");
+      set(11, resid?"X":null);
+      set(12, (r.category&&!resid)?"X":null);
+      set(13, r.transformer); set(14, r.phase);
+      set(15, r.sector); set(16, r.cell); set(17, r.village); set(18, r.comment);
+      // X / Y (TM Rwanda) — borders copied from column R of this row so they match.
+      const bstyle=clone(row.getCell(18).style);
+      row.getCell(19).style=clone(bstyle); row.getCell(20).style=clone(bstyle);
+      row.getCell(19).numFmt="0.00"; row.getCell(20).numFmt="0.00";
+      set(19, num(r.x)); set(20, num(r.y));
+      row.commit&&row.commit();
+    });
+    // Fill header banner when a single value applies to the whole sheet.
+    const uniq=k=>{ const s=new Set(records.map(r=>String(r[k]||"").trim()).filter(Boolean)); return s.size===1?[...s][0]:""; };
+    const tx=uniq("transformer"); if(tx) ws.getCell("A3").value="TRANSFORMER NAME:   "+tx;
+    const out=await wb.xlsx.writeBuffer();
+    const blob=new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download="RESERVE_"+new Date().toISOString().slice(0,10)+".xlsx"; a.click();
+    URL.revokeObjectURL(url); toast("Exported "+records.length+" record(s) to Excel","ok");
+  }catch(e){ console.error(e); toast("Excel export failed: "+(e.message||e),"err"); }
+}
+
+/* ---------- CSV ---------- */
+function exportCSV(){
+  if(!records.length){ toast("No records to export","err"); return; }
+  const headers=FIELDS.map(f=>f.l).concat("GPS Accuracy (m)");
+  const escv=v=>{ const s=String(v==null?"":v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const rows=records.map(r=>FIELDS.map(f=>escv(r[f.k])).concat(escv(r.accuracy)).join(","));
+  const csv=[headers.join(","),...rows].join("\r\n");
+  const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download="asbuilt_"+new Date().toISOString().slice(0,10)+".csv"; a.click();
+  URL.revokeObjectURL(url); toast("Exported "+records.length+" record(s)","ok");
+}
+
+/* ---------- utils ---------- */
+function esc(s){ return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function escapeAttr(s){ return String(s).replace(/"/g,"&quot;"); }
+let toastT=null;
+function toast(msg,kind){ const t=document.getElementById("toast"); t.className="toast "+(kind||"ok"); t.textContent=msg; clearTimeout(toastT); toastT=setTimeout(()=>t.className="toast hidden",2500); }
+
+/* ---------- Map ---------- */
+let map=null, satLayer=null, osmLayer=null, markerLayer=null, meMarker=null;
+let captureMarker=null, captureCircle=null;
+const RW_CENTER=[-1.94,29.87];
+
+function initMap(){
+  if(map) return;
+  satLayer=L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom:19, attribution:"Imagery © Esri, Maxar, Earthstar Geographics" });
+  osmLayer=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom:19, attribution:"© OpenStreetMap contributors" });
+  map=L.map("map",{ center:RW_CENTER, zoom:8, layers:[satLayer] });
+  L.control.layers({ "Satellite (Esri)":satLayer, "Streets (OSM)":osmLayer }, null, { position:"topright" }).addTo(map);
+  markerLayer=L.layerGroup().addTo(map);
+  map.on("click",e=>{ if(tapToSet) applyManualPoint(e.latlng.lat, e.latlng.lng); });
+  drawMarkers();
+  setTimeout(()=>{ map.invalidateSize(); fitPoints(); }, 60);
+}
+
+function drawMarkers(){
+  if(!markerLayer) return;
+  markerLayer.clearLayers();
+  records.forEach(r=>{
+    const ll=recLatLng(r); if(!ll) return;
+    const name=[r.firstName,r.lastName].filter(Boolean).join(" ")||"Unnamed";
+    const col=r.manual?"#2563eb":r.accuracy==null?"#0ea5e9":r.accuracy<=5?"#10b981":r.accuracy<=15?"#f59e0b":"#f43f5e";
+    L.circleMarker(ll,{ radius:7, color:"#fff", weight:2, fillColor:col, fillOpacity:1 })
+      .bindPopup("<b>#"+esc(r.serial||"—")+" · "+esc(name)+"</b><br>"
+        +"E: "+esc(r.x||"—")+"  N: "+esc(r.y||"—")+(r.manual?"  (manual)":(r.accuracy!=null?"  (±"+r.accuracy+" m)":""))
+        +(r.meter?"<br>Meter: "+esc(r.meter):"")
+        +(r.transformer?"<br>TX: "+esc(r.transformer):"")
+        +(r.village?"<br>"+esc(r.village):""))
+      .addTo(markerLayer);
+  });
+}
+
+// The active point (being captured or edited). Draggable; keeps X/Y in sync.
+let tapToSet=false;
+function activeColor(acc,manual){ return manual?"#2563eb":acc==null?"#0ea5e9":acc<=5?"#10b981":acc<=15?"#f59e0b":"#f43f5e"; }
+
+function showCaptureMarker(lat,lng,acc){ setActivePoint(lat,lng,acc,false); }
+
+function activePinIcon(col){
+  return L.divIcon({ className:"", iconSize:[22,22], iconAnchor:[11,11],
+    html:'<div style="width:18px;height:18px;border-radius:50%;background:'+col+';border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 1px 4px rgba(0,0,0,.4);cursor:grab"></div>' });
+}
+function setActivePoint(lat,lng,acc,manual){
+  if(!map) return;
+  const col=activeColor(acc,manual);
+  if(!captureMarker){
+    captureCircle=L.circle([lat,lng],{ radius:manual?0:(acc||10), color:col, weight:1, fillColor:col, fillOpacity:manual?0:.12 }).addTo(map);
+    captureMarker=L.marker([lat,lng],{ draggable:true, autoPan:true, icon:activePinIcon(col), zIndexOffset:1000, title:"Drag to adjust the point" }).addTo(map);
+    captureMarker.on("drag",e=>{ const p=e.target.getLatLng(); if(captureCircle) captureCircle.setLatLng(p); });
+    captureMarker.on("dragend",e=>{ const p=e.target.getLatLng(); applyManualPoint(p.lat,p.lng); });
+    map.setView([lat,lng], Math.max(map.getZoom(),18));
+  } else {
+    captureMarker.setLatLng([lat,lng]).setIcon(activePinIcon(col));
+    captureCircle.setLatLng([lat,lng]).setRadius(manual?0:(acc||10)).setStyle({ color:col, fillColor:col, fillOpacity:manual?0:.12 });
+  }
+  captureMarker.bindPopup(manual?"Manual point — drag to fine-tune":"Captured — drag to adjust");
+}
+
+// User moved the point by hand (drag, tap, or typed E/N): recompute and flag manual.
+function applyManualPoint(lat,lng){
+  form.lat=lat; form.lng=lng; form.manual=true;
+  const t=wgs84ToTMRwanda(lat,lng);
+  form.x=t.e.toFixed(2); form.y=t.n.toFixed(2);
+  const fx=document.getElementById("fld-x"), fy=document.getElementById("fld-y");
+  if(fx) fx.value=form.x; if(fy) fy.value=form.y;
+  accuracy=null;                       // precision no longer GPS-derived
+  stopGPS(); if(gpsState==="tracking"){ gpsState="done"; renderGpsBtn(); }
+  setActivePoint(lat,lng,null,true);
+  renderPrecision();
+}
+
+function toggleTapToSet(){
+  tapToSet=!tapToSet;
+  const b=document.getElementById("tapBtn");
+  if(b){ b.classList.toggle("primary",tapToSet); b.textContent=tapToSet?"✋ Tap-to-set: ON":"✋ Tap-to-set"; }
+  toast(tapToSet?"Tap the map to place the point":"Tap-to-set off","ok");
+}
+
+function clearCaptureMarker(){
+  if(captureMarker){ map.removeLayer(captureMarker); captureMarker=null; }
+  if(captureCircle){ map.removeLayer(captureCircle); captureCircle=null; }
+}
+function fitPoints(){
+  if(!map) return;
+  const lls=records.map(recLatLng).filter(Boolean);
+  if(captureMarker) lls.push(captureMarker.getLatLng());
+  if(lls.length){ map.fitBounds(L.latLngBounds(lls).pad(0.25), { maxZoom:18 }); }
+  else { map.setView(RW_CENTER, 8); }
+}
+
+function locateMe(){
+  if(!map) return;
+  if(!navigator.geolocation){ toast("Geolocation not supported","err"); return; }
+  navigator.geolocation.getCurrentPosition(p=>{
+    const ll=[p.coords.latitude,p.coords.longitude];
+    if(meMarker) map.removeLayer(meMarker);
+    meMarker=L.circleMarker(ll,{ radius:8, color:"#fff", weight:3, fillColor:"#2563eb", fillOpacity:1 })
+      .bindPopup("You are here (±"+p.coords.accuracy.toFixed(0)+" m)").addTo(map);
+    map.setView(ll, 17); meMarker.openPopup();
+  }, err=>toast(err.code===1?"Location permission denied":"Could not get location","err"),
+  { enableHighAccuracy:true, timeout:15000 });
+}
+
+/* Pre-download visible satellite tiles into cache for offline field use. */
+function lon2tile(lon,z){ return Math.floor((lon+180)/360*Math.pow(2,z)); }
+function lat2tile(lat,z){ return Math.floor((1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*Math.pow(2,z)); }
+
+async function saveAreaOffline(){
+  if(!map){ return; }
+  if(!navigator.onLine){ toast("Go online first to download tiles","err"); return; }
+  const b=map.getBounds();
+  const z0=Math.max(1,Math.round(map.getZoom()));
+  const zooms=[z0, z0+1, z0+2].filter(z=>z<=19);
+  const urls=[];
+  zooms.forEach(z=>{
+    const xMin=lon2tile(b.getWest(),z), xMax=lon2tile(b.getEast(),z);
+    const yMin=lat2tile(b.getNorth(),z), yMax=lat2tile(b.getSouth(),z);
+    for(let x=xMin;x<=xMax;x++) for(let y=yMin;y<=yMax;y++)
+      urls.push("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/"+z+"/"+y+"/"+x);
+  });
+  if(urls.length>1500){ toast("Area too large — zoom in a bit","err"); return; }
+  const bar=document.getElementById("dlbar"), fill=document.getElementById("dlfill"), btn=document.getElementById("dlBtn");
+  bar.classList.remove("hidden"); fill.style.width="0%"; btn.disabled=true;
+  let done=0, ok=0;
+  const cache = ("caches" in window) ? await caches.open("asbuilt-tiles-v1") : null;
+  const CONC=6;
+  async function worker(list){
+    for(const u of list){
+      try{ const res=await fetch(u,{ mode:"no-cors" }); if(cache) await cache.put(u,res.clone()); ok++; }
+      catch(e){}
+      done++; fill.style.width=Math.round(done/urls.length*100)+"%";
+    }
+  }
+  const chunks=Array.from({length:CONC},(_,i)=>urls.filter((_,idx)=>idx%CONC===i));
+  await Promise.all(chunks.map(worker));
+  btn.disabled=false;
+  setTimeout(()=>bar.classList.add("hidden"),800);
+  toast("Saved "+ok+" tiles for offline use","ok");
+}
+
+function updateNet(){
+  const p=document.getElementById("netPill"); if(!p) return;
+  const on=navigator.onLine;
+  p.className="netpill "+(on?"net-on":"net-off"); p.textContent=on?"● Online":"● Offline";
+}
+window.addEventListener("online",updateNet);
+window.addEventListener("offline",updateNet);
+
+/* ---------- PWA install ---------- */
+
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt",e=>{
+  e.preventDefault(); deferredPrompt=e;
+  const b=document.getElementById("installBtn"); if(b) b.style.display="inline-block";
+});
+function doInstall(){
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.finally(()=>{ deferredPrompt=null; const b=document.getElementById("installBtn"); if(b) b.style.display="none"; });
+}
+window.addEventListener("appinstalled",()=>{ const b=document.getElementById("installBtn"); if(b) b.style.display="none"; toast("App installed","ok"); });
+
+// iOS has no install prompt — show Add to Home Screen hint (only in Safari tab, not when already installed).
+(function(){
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone = window.navigator.standalone===true || window.matchMedia("(display-mode: standalone)").matches;
+  if(isIOS && !standalone) document.getElementById("iosHint").classList.remove("hidden");
+})();
+
+// Register service worker for offline use (needs HTTPS).
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+}
+
+/* ---------- init ---------- */
+buildForm();
+form.serial=String(nextSerial()); writeForm();
+persist();
+setView("form");   // New Entry + map on page 1
+</script>
+</body>
+</html>
