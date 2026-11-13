@@ -1,7 +1,7 @@
 {
   "name": "WK Connect Survey",
   "short_name": "WK Connect",
-  "description": "WK Connect Survey — as-built field data collection with GPS in TM Rwanda (EPSG:4083).",
+  "description": "WK Connect Survey — as-built field data collection with GPS in ITRF2005 / TM Rwanda.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

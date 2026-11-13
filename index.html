@@ -185,7 +185,7 @@ function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } cat
 function persist(){ localStorage.setItem(KEY, JSON.stringify(records)); document.getElementById("count").textContent = records.length; }
 function nextSerial(){ const n=records.map(r=>parseInt(String(r.serial).replace(/\D/g,""),10)).filter(x=>!isNaN(x)); return n.length?Math.max(...n)+1:1; }
 
-/* ---------- TM Rwanda projection (WGS84 -> EPSG:4083) ---------- */
+/* ---------- TM Rwanda projection (WGS84 -> ITRF2005 / TM Rwanda; NOT EPSG:4083) ---------- */
 function wgs84ToTMRwanda(lat, lon){
   const a=6378137.0, f=1/298.257222101, e2=f*(2-f), ep2=e2/(1-e2);
   const k0=0.9999, lon0=30*Math.PI/180, FE=500000, FN=5000000;
@@ -202,7 +202,7 @@ function wgs84ToTMRwanda(lat, lon){
   return { e:E, n:Nn };
 }
 
-// Inverse: ITRF2005 / TM Rwanda (EPSG:4083) Easting/Northing -> WGS84 lat/long.
+// Inverse: ITRF2005 / TM Rwanda Easting/Northing -> WGS84 lat/long.
 function tmRwandaToWgs84(E, N){
   const a=6378137.0, f=1/298.257222101, e2=f*(2-f), ep2=e2/(1-e2);
   const k0=0.9999, lon0=30*Math.PI/180, FE=500000, FN=5000000;
@@ -238,7 +238,7 @@ function buildForm(){
     const g=document.createElement("div"); g.className="grid";
     if(sec.gps){
       const note=document.createElement("div"); note.className="crsnote";
-      note.innerHTML="CRS: ITRF2005 / TM Rwanda (EPSG:4083). Values in metres. GPS is auto-converted from WGS84.";
+      note.innerHTML="CRS: ITRF2005 / TM Rwanda (TM, CM 30°E, k0 0.9999, FE 500 000, FN 5 000 000, GRS80). Values in metres. GPS is auto-converted from WGS84.";
       g.appendChild(note);
     }
     sec.fields.forEach(f=>{
@@ -405,7 +405,7 @@ function saveRecord(){
     editingId=null; resetGps(); gpsState="idle"; renderGpsBtn(); writeForm(); renderList(); if(map){ clearCaptureMarker(); drawMarkers(); }
   }
 }
-function removeRecord(id){ records=records.filter(r=>r._id!==id); persist(); renderList(); if(markerLayer) drawMarkers(); toast("Record deleted","ok"); }
+function removeRecord(id){ const r=records.find(x=>x._id===id); if(!r) return; if(!confirm("Delete record #"+(r.serial||"—")+" "+[r.firstName,r.lastName].filter(Boolean).join(" ")+"? This cannot be undone.")) return; records=records.filter(r=>r._id!==id); persist(); renderList(); if(markerLayer) drawMarkers(); toast("Record deleted","ok"); }
 
 /* ---------- List ---------- */
 function renderList(filter){
@@ -496,25 +496,28 @@ async function exportXLSX(){
     // Fill header banner when a single value applies to the whole sheet.
     const uniq=k=>{ const s=new Set(records.map(r=>String(r[k]||"").trim()).filter(Boolean)); return s.size===1?[...s][0]:""; };
     const tx=uniq("transformer"); if(tx) ws.getCell("A3").value="TRANSFORMER NAME:   "+tx;
+    const dist=uniq("district");
+    if(dist){ const a1=String(ws.getCell("E1").value||""); ws.getCell("E1").value=a1.replace(/IN\s+\S+\s+DISTRICT\s*$/i,"IN "+dist.toUpperCase()+" DISTRICT"); }
+    const sec=uniq("sector"); if(sec) ws.getCell("C2").value="REPORT ON INSTALLED PREPAID METER IN "+sec.toUpperCase()+" SECTOR";
     const out=await wb.xlsx.writeBuffer();
     const blob=new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
     const url=URL.createObjectURL(blob), a=document.createElement("a");
     a.href=url; a.download="RESERVE_"+new Date().toISOString().slice(0,10)+".xlsx"; a.click();
-    URL.revokeObjectURL(url); toast("Exported "+records.length+" record(s) to Excel","ok");
+    setTimeout(()=>URL.revokeObjectURL(url),4000); toast("Exported "+records.length+" record(s) to Excel","ok");
   }catch(e){ console.error(e); toast("Excel export failed: "+(e.message||e),"err"); }
 }
 
 /* ---------- CSV ---------- */
 function exportCSV(){
   if(!records.length){ toast("No records to export","err"); return; }
-  const headers=FIELDS.map(f=>f.l).concat("GPS Accuracy (m)");
+  const headers=FIELDS.map(f=>f.l).concat("GPS Accuracy (m)","Latitude (WGS84)","Longitude (WGS84)","Point Source");
   const escv=v=>{ const s=String(v==null?"":v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
-  const rows=records.map(r=>FIELDS.map(f=>escv(r[f.k])).concat(escv(r.accuracy)).join(","));
+  const rows=records.map(r=>{ const ll=recLatLng(r); return FIELDS.map(f=>escv(r[f.k])).concat(escv(r.accuracy), ll?ll[0].toFixed(7):"", ll?ll[1].toFixed(7):"", r.manual?"Manual":(r.accuracy!=null?"GPS":"")).join(","); });
   const csv=[headers.join(","),...rows].join("\r\n");
   const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
   const url=URL.createObjectURL(blob), a=document.createElement("a");
   a.href=url; a.download="asbuilt_"+new Date().toISOString().slice(0,10)+".csv"; a.click();
-  URL.revokeObjectURL(url); toast("Exported "+records.length+" record(s)","ok");
+  setTimeout(()=>URL.revokeObjectURL(url),4000); toast("Exported "+records.length+" record(s)","ok");
 }
 
 /* ---------- utils ---------- */

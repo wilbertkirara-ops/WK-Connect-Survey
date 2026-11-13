@@ -24,7 +24,8 @@ MAP (on the New Entry page)
   signal in the field. Any area you simply pan over online is also cached.
 - Marker colour = GPS precision (green <=5 m, amber <=15 m, red >15 m).
 
-COORDINATES: X/Y stored in ITRF2005 / TM Rwanda (EPSG:4083). GPS auto-converts.
+COORDINATES: X/Y stored in ITRF2005 / TM Rwanda (CM 30E, k0 0.9999, FE 500000,
+FN 5000000, GRS80). NOTE: this is NOT EPSG:4083 (that code is REGCAN95 / UTM 28N). GPS auto-converts.
 NOTE: GPS + tile download need https:// (not file://).
 
 GPS ACCURACY
