@@ -1,13 +1,13 @@
 {
   "name": "WK Connect Survey",
   "short_name": "WK Connect",
-  "description": "WK Connect Survey — as-built field data collection with GPS in ITRF2005 / TM Rwanda.",
+  "description": "WK Connect Survey — Nyanza as-built customer connections: satellite GPS (TM Rwanda), house photos, Excel/ZIP export.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f1f5f9",
-  "theme_color": "#1e293b",
+  "theme_color": "#0f172a",
   "icons": [
     { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

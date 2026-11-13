@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-<meta name="theme-color" content="#1e293b" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f172a" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="favicon-32.png" sizes="32x32" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -14,704 +14,834 @@
 <link rel="stylesheet" href="leaflet/leaflet.css" />
 <title>WK Connect Survey</title>
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  :root { --sky:#0284c7; --sky2:#0ea5e9; --slate:#1e293b; --line:#e2e8f0; --muted:#64748b; }
-  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:#f1f5f9; color:#1e293b; }
-  header { position:sticky; top:0; z-index:20; background:var(--slate); color:#fff; box-shadow:0 1px 6px rgba(0,0,0,.15); }
-  .bar { max-width:760px; margin:0 auto; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-  .bar h1 { font-size:16px; margin:0; font-weight:600; }
-  .csvbtn { background:var(--sky); color:#fff; border:none; padding:7px 12px; border-radius:9px; font-size:14px; font-weight:600; }
-  .tabs { max-width:760px; margin:0 auto; padding:0 16px; display:flex; gap:4px; }
-  .tab { background:none; border:none; border-bottom:2px solid transparent; color:#94a3b8; padding:10px 12px; font-size:14px; font-weight:600; }
-  .tab.active { color:#fff; border-color:var(--sky2); }
-  main { max-width:760px; margin:0 auto; padding:16px 16px 120px; }
-  .card { background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,.04); overflow:hidden; margin-bottom:16px; }
-  .card > h2 { font-size:13px; margin:0; padding:11px 16px; background:#f8fafc; border-bottom:1px solid var(--line); font-weight:600; color:#334155; }
-  .grid { padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .full { grid-column:1 / -1; }
-  label { display:block; }
-  label span { display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px; }
-  input, select, textarea { width:100%; padding:9px 11px; border:1px solid #cbd5e1; border-radius:9px; font-size:14px; background:#fff; }
-  input:focus, select:focus, textarea:focus { outline:none; border-color:var(--sky2); box-shadow:0 0 0 3px rgba(14,165,233,.2); }
-  textarea { resize:none; }
-  .crsnote { grid-column:1/-1; font-size:11px; color:#475569; background:#f0f9ff; border:1px solid #e0f2fe; border-radius:9px; padding:8px 10px; margin-bottom:-2px; }
-  .gpsbtn { grid-column:1/-1; border:none; color:#fff; background:var(--slate); padding:11px; border-radius:9px; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; }
-  .gpsbtn.tracking { background:#d97706; }
-  .gpsbtn.done { background:#334155; }
-  .prec { grid-column:1/-1; margin-top:-2px; }
-  .prec .row { display:flex; justify-content:space-between; font-size:12px; }
-  .prec b.good{color:#059669} .prec b.fair{color:#d97706} .prec b.poor{color:#e11d48}
-  .track { height:6px; background:#e2e8f0; border-radius:99px; overflow:hidden; margin-top:5px; }
-  .track > div { height:100%; border-radius:99px; transition:width .3s; }
-  .fill-good{background:#10b981}.fill-fair{background:#f59e0b}.fill-poor{background:#f43f5e}
-  .hint { font-size:11px; color:#94a3b8; margin-top:5px; }
-  .warn { grid-column:1/-1; font-size:12px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; border-radius:9px; padding:9px 11px; }
-  .counter { text-align:center; font-size:12px; color:#94a3b8; }
-  .savebar { position:fixed; bottom:0; left:0; right:0; z-index:20; background:rgba(255,255,255,.96); backdrop-filter:blur(6px); border-top:1px solid var(--line); }
-  .savebar .in { max-width:760px; margin:0 auto; padding:12px 16px; display:flex; gap:12px; }
-  .savebar button { padding:13px; border-radius:11px; font-size:15px; font-weight:600; border:none; }
-  .clear { background:#fff; border:1px solid #cbd5e1 !important; color:#475569; }
-  .save { flex:1; background:var(--sky); color:#fff; }
-  .search { position:relative; margin-bottom:16px; }
-  .search input { padding-left:12px; }
-  .rec { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; display:flex; justify-content:space-between; gap:12px; }
-  .rec .sn { font-family:ui-monospace,monospace; font-size:12px; background:#f1f5f9; border-radius:5px; padding:1px 6px; color:#475569; }
-  .rec .nm { font-weight:600; }
-  .rec .ph { font-size:11px; background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; border-radius:5px; padding:1px 6px; }
-  .rec .meta { margin-top:6px; font-size:12px; color:#64748b; display:grid; grid-template-columns:1fr 1fr; gap:2px 12px; }
-  .rec .meta .w { grid-column:1/-1; }
-  .acc-good{color:#059669}.acc-fair{color:#d97706}.acc-poor{color:#e11d48}
-  .rec .acts { display:flex; flex-direction:column; gap:6px; }
-  .rec .acts button { border:none; background:none; padding:6px; border-radius:8px; font-size:13px; }
-  .edit { color:#475569; } .del { color:#e11d48; }
-  .empty { text-align:center; color:#94a3b8; padding:60px 0; }
-  .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); z-index:30; color:#fff; padding:9px 16px; border-radius:99px; font-size:13px; box-shadow:0 4px 12px rgba(0,0,0,.2); }
-  .toast.ok{background:#059669}.toast.err{background:#e11d48}
-  .hidden { display:none !important; }
-  /* map */
-  #mapWrap { position:relative; }
-  #map { width:100%; height:300px; border-radius:14px; border:1px solid var(--line); background:#e2e8f0; z-index:1; }
-  .mapctrls { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
-  .mapctrls button { border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:9px; padding:8px 12px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px; }
-  .mapctrls button.primary { background:var(--slate); color:#fff; border-color:var(--slate); }
-  .netpill { font-size:11px; padding:3px 9px; border-radius:99px; font-weight:600; }
-  .net-on{ background:#dcfce7; color:#166534; } .net-off{ background:#fee2e2; color:#991b1b; }
-  .dlbar { margin-top:10px; height:6px; background:#e2e8f0; border-radius:99px; overflow:hidden; }
-  .dlbar>div{ height:100%; background:var(--sky2); width:0%; transition:width .2s; }
-  .leaflet-popup-content { font-size:13px; line-height:1.5; }
-  .leaflet-popup-content b { color:#0f172a; }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --ink:#0f172a;--ink2:#1e293b;--muted:#64748b;--line:#e2e8f0;--bg:#f1f5f9;--card:#fff;
+    --accent:#0369a1;--accent2:#0ea5e9;--good:#059669;--fair:#d97706;--poor:#dc2626;--man:#2563eb;
+    --r:14px;--safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px)
+  }
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  button{font:inherit;cursor:pointer}
+  /* ---------- header ---------- */
+  header{position:sticky;top:0;z-index:40;background:var(--ink);color:#fff;padding-top:var(--safe-t);box-shadow:0 2px 10px rgba(0,0,0,.18)}
+  .hrow{max-width:780px;margin:0 auto;padding:10px 14px 6px;display:flex;align-items:center;gap:10px}
+  .brand{font-weight:800;font-size:16px;letter-spacing:-.01em;line-height:1.1}
+  .brand small{display:block;font-weight:500;font-size:11px;color:#94a3b8;letter-spacing:.02em}
+  .agent{margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:99px;padding:6px 11px;font-size:12.5px;font-weight:600;max-width:46%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gpsbar{max-width:780px;margin:0 auto;padding:0 14px 8px}
+  .gpschip{display:flex;align-items:center;gap:10px;border-radius:12px;padding:8px 12px;background:#1e293b;border:1px solid #334155}
+  .gpschip .dot{width:11px;height:11px;border-radius:50%;background:#64748b;flex:0 0 auto;box-shadow:0 0 0 4px rgba(100,116,139,.25)}
+  .gpschip.good .dot{background:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.25)}
+  .gpschip.fair .dot{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.25)}
+  .gpschip.poor .dot{background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.25)}
+  .gpschip.wait .dot{animation:pulse 1.2s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+  .gpschip .big{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .gpschip .lbl{font-size:11.5px;color:#cbd5e1;line-height:1.25}
+  .gpschip .src{margin-left:auto;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:99px;background:#334155;color:#e2e8f0;white-space:nowrap}
+  .gpschip .src.sat{background:#064e3b;color:#a7f3d0}
+  .gpschip .src.net{background:#7c2d12;color:#fed7aa}
+  nav{max-width:780px;margin:0 auto;display:flex;padding:0 8px}
+  nav button{flex:1;background:none;border:0;border-bottom:3px solid transparent;color:#94a3b8;font-weight:700;font-size:13.5px;padding:9px 4px}
+  nav button.on{color:#fff;border-color:var(--accent2)}
+  /* ---------- layout ---------- */
+  main{max-width:780px;margin:0 auto;padding:14px 14px calc(110px + var(--safe-b))}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 1px 3px rgba(15,23,42,.05);margin-bottom:14px;overflow:hidden}
+  .card h2{margin:0;padding:11px 14px;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:#334155;background:#f8fafc;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .card h2 .req{margin-left:auto;font-size:10.5px;color:var(--poor);letter-spacing:0;text-transform:none}
+  .pad{padding:14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .full{grid-column:1/-1}
+  @media(max-width:380px){.grid{grid-template-columns:1fr}}
+  label span{display:block;font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:4px}
+  label span b{color:var(--poor)}
+  input,select,textarea{width:100%;padding:11px 12px;border:1.5px solid #cbd5e1;border-radius:10px;font:inherit;font-size:16px;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 3px rgba(14,165,233,.18)}
+  input[readonly]{background:#f8fafc;color:#334155}
+  textarea{resize:vertical;min-height:70px}
+  .btn{border:0;border-radius:11px;padding:12px 14px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+  .btn.pri{background:var(--accent);color:#fff}
+  .btn.dark{background:var(--ink2);color:#fff}
+  .btn.ghost{background:#fff;border:1.5px solid #cbd5e1;color:#334155}
+  .btn.warn{background:var(--fair);color:#fff}
+  .btn:disabled{opacity:.5}
+  .w100{width:100%}
+  /* ---------- GPS capture ---------- */
+  .cap{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+  .ring{width:86px;height:86px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c,#94a3b8) calc(var(--p,0)*1%),#e2e8f0 0);position:relative}
+  .ring::after{content:"";position:absolute;inset:8px;border-radius:50%;background:#fff}
+  .ring div{position:relative;z-index:1;text-align:center;line-height:1.05}
+  .ring b{font-size:19px;font-variant-numeric:tabular-nums}
+  .ring small{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+  .capinfo{font-size:13px;color:#334155}
+  .capinfo .st{font-weight:800;font-size:15px;margin-bottom:2px}
+  .capinfo .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+  .tip{font-size:12px;color:#475569;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:8px 10px;margin-top:12px}
+  .warnbox{font-size:12.5px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:9px 11px;margin-top:10px}
+  .row2{display:flex;gap:10px;margin-top:12px}
+  .row2 .btn{flex:1}
+  /* ---------- map ---------- */
+  #map{height:240px;border-top:1px solid var(--line);background:#e2e8f0;z-index:1}
+  .mapbar{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px}
+  .mapbar button{border:1.5px solid #cbd5e1;background:#fff;color:#334155;border-radius:9px;padding:7px 10px;font-size:12.5px;font-weight:700}
+  .mapbar button.on{background:var(--ink2);color:#fff;border-color:var(--ink2)}
+  .netpill{margin-left:auto;align-self:center;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px}
+  .net-on{background:#dcfce7;color:#166534}.net-off{background:#fee2e2;color:#991b1b}
+  .dlbar{height:5px;background:#e2e8f0}.dlbar>div{height:100%;width:0;background:var(--accent2);transition:width .2s}
+  /* ---------- photo ---------- */
+  .photo{display:grid;place-items:center;min-height:170px;border:2px dashed #cbd5e1;border-radius:12px;background:#f8fafc;color:var(--muted);text-align:center;overflow:hidden;position:relative}
+  .photo img{width:100%;max-height:300px;object-fit:cover;display:block}
+  .photo .ph{padding:18px}
+  .photo .ph b{display:block;font-size:30px}
+  /* ---------- records ---------- */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .stat b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+  .stat span{font-size:11.5px;color:var(--muted);font-weight:600}
+  .rec{display:flex;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
+  .rec .th{width:64px;height:64px;border-radius:9px;background:#e2e8f0;flex:0 0 auto;object-fit:cover;display:grid;place-items:center;font-size:22px;color:#94a3b8}
+  .rec .bd{flex:1;min-width:0}
+  .rec .t{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rec .t .sn{font:600 12px ui-monospace,Menlo,monospace;background:#f1f5f9;border-radius:5px;padding:1px 6px;color:#475569;margin-right:4px}
+  .rec .m{font-size:12px;color:var(--muted);margin-top:3px}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;margin-right:4px}
+  .tag.good{background:#d1fae5;color:#065f46}.tag.fair{background:#fef3c7;color:#92400e}.tag.poor{background:#fee2e2;color:#991b1b}.tag.man{background:#dbeafe;color:#1e40af}.tag.miss{background:#fee2e2;color:#991b1b}
+  .rec .ac{display:flex;flex-direction:column;gap:4px}
+  .rec .ac button{border:0;background:#f1f5f9;border-radius:8px;padding:7px 9px;font-size:12.5px;font-weight:700;color:#334155}
+  .rec .ac button.del{color:var(--poor);background:#fef2f2}
+  .empty{text-align:center;color:#94a3b8;padding:50px 0}
+  .exp{display:grid;gap:10px}
+  .exp .btn{justify-content:flex-start}
+  .exp .btn small{display:block;font-weight:500;font-size:12px;opacity:.85}
+  /* ---------- save bar / toast / modal ---------- */
+  .savebar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding-bottom:var(--safe-b)}
+  .savebar .in{max-width:780px;margin:0 auto;padding:10px 14px;display:flex;gap:10px}
+  .savebar .save{flex:1}
+  #toast{position:fixed;left:50%;bottom:calc(86px + var(--safe-b));transform:translateX(-50%);z-index:60;color:#fff;padding:10px 16px;border-radius:99px;font-size:13.5px;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.22);max-width:92vw;text-align:center}
+  #toast.ok{background:#047857}#toast.err{background:#b91c1c}#toast.info{background:#1e293b}
+  .modal{position:fixed;inset:0;z-index:80;background:rgba(15,23,42,.6);display:grid;place-items:center;padding:20px}
+  .modal .box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .modal h3{margin:0 0 6px;font-size:18px}
+  .modal p{margin:0 0 14px;color:var(--muted);font-size:13.5px}
+  .hidden{display:none!important}
+  .leaflet-popup-content{font-size:13px;line-height:1.5}
 </style>
 </head>
 <body>
+
 <header>
-  <div class="bar">
-    <h1>WK Connect Survey</h1>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="csvbtn" id="installBtn" style="display:none;background:#334155" onclick="doInstall()">⤓ Install</button>
-      <button class="csvbtn" onclick="exportXLSX()">⬇ Excel</button>
-      <button class="csvbtn" style="background:#475569" onclick="exportCSV()">CSV</button>
+  <div class="hrow">
+    <div class="brand">WK Connect Survey<small>NYANZA · AS-BUILT CUSTOMER CONNECTIONS</small></div>
+    <button class="agent" id="agentChip" onclick="askAgent(true)">👤 —</button>
+  </div>
+  <div class="gpsbar">
+    <div class="gpschip wait" id="gpsChip">
+      <span class="dot"></span>
+      <span class="big" id="gpsBig">—</span>
+      <span class="lbl" id="gpsLbl">Starting GPS…</span>
+      <span class="src" id="gpsSrc">GPS</span>
     </div>
   </div>
-  <div class="tabs">
-    <button class="tab active" id="tab-form" onclick="setView('form')">＋ New Entry</button>
-    <button class="tab" id="tab-list" onclick="setView('list')">☰ Records (<span id="count">0</span>)</button>
-  </div>
+  <nav>
+    <button id="tab-form" class="on" onclick="setView('form')">＋ New entry</button>
+    <button id="tab-list" onclick="setView('list')">☰ Records (<span id="count">0</span>)</button>
+    <button id="tab-exp" onclick="setView('exp')">⬇ Export</button>
+  </nav>
 </header>
 
-<div id="iosHint" class="hidden" style="max-width:760px;margin:0 auto;padding:10px 16px;">
-  <div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:11px;padding:10px 12px;font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:center">
-    <span>To install: tap <b>Share</b> ⬆︎, then <b>Add to Home Screen</b>.</span>
-    <button onclick="document.getElementById('iosHint').classList.add('hidden')" style="border:none;background:none;color:#1e40af;font-size:16px">✕</button>
+<div id="iosHint" class="hidden" style="max-width:780px;margin:10px auto 0;padding:0 14px">
+  <div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:center">
+    <span>Install: tap <b>Share</b> ⬆︎ then <b>Add to Home Screen</b>.</span>
+    <button onclick="document.getElementById('iosHint').classList.add('hidden')" style="margin-left:auto;border:0;background:none;color:#1e40af;font-size:18px">✕</button>
   </div>
 </div>
 
 <main>
-  <div id="entryView">
-    <div id="mapBlock">
-      <div class="mapctrls">
-        <button onclick="locateMe()">📍 My location</button>
-        <button onclick="fitPoints()">⤢ Fit points</button>
-        <button id="tapBtn" onclick="toggleTapToSet()">✋ Tap-to-set</button>
-        <button class="primary" id="dlBtn" onclick="saveAreaOffline()">⬇ Save area offline</button>
+  <!-- ================= ENTRY ================= -->
+  <section id="v-form">
+    <div class="card">
+      <h2>📍 Position — TM Rwanda <span class="req">required</span></h2>
+      <div class="pad">
+        <div class="cap">
+          <div class="ring" id="ring"><div><b id="ringVal">—</b><small id="ringSub">not captured</small></div></div>
+          <div class="capinfo">
+            <div class="st" id="capState">No point yet</div>
+            <div class="mono" id="capXY">E —  ·  N —</div>
+            <div id="capMeta" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
+          </div>
+        </div>
+        <div class="row2">
+          <button class="btn pri" id="capBtn" onclick="startCapture()">🛰 Capture position</button>
+          <button class="btn warn hidden" id="useBtn" onclick="finishCapture(true)">Use now</button>
+        </div>
+        <div class="grid" style="margin-top:12px">
+          <label><span>X · Easting (m)</span><input id="fx" inputmode="decimal" oninput="typedXY()"></label>
+          <label><span>Y · Northing (m)</span><input id="fy" inputmode="decimal" oninput="typedXY()"></label>
+        </div>
+        <div class="tip">Stand outside the house in open sky, hold the phone still. The app averages satellite fixes for up to 60 s and ignores network (Wi-Fi / mobile) positions. CRS: ITRF2005 / TM Rwanda (CM 30°E, k0 0.9999, FE 500 000, FN 5 000 000).</div>
+        <div class="warnbox hidden" id="secureWarn">⚠ GPS needs HTTPS. Open the app from its https:// link.</div>
+      </div>
+      <div class="mapbar">
+        <button onclick="locateMe()">◎ Me</button>
+        <button onclick="fitPoints()">⤢ Fit</button>
+        <button id="tapBtn" onclick="toggleTap()">✋ Tap-to-set</button>
+        <button id="dlBtn" onclick="saveAreaOffline()">⬇ Save map offline</button>
         <span class="netpill" id="netPill">…</span>
       </div>
-      <div id="mapWrap"><div id="map"></div></div>
       <div class="dlbar hidden" id="dlbar"><div id="dlfill"></div></div>
-      <p class="hint" id="mapHint" style="margin:8px 0 16px">
-        <b>Drag the pin</b> to adjust the captured point, or tap <b>Tap-to-set</b> then tap the map to place it. X/Y update automatically. Layer switcher (top-right) toggles Satellite/Streets. Tap <b>Save area offline</b> while online to cache imagery for use with no signal.
-      </p>
+      <div id="map"></div>
     </div>
-    <div id="formView"></div>
-  </div>
-  <div id="listView" class="hidden"></div>
+
+    <div class="card">
+      <h2>📷 House photo <span class="req">required</span></h2>
+      <div class="pad">
+        <div class="photo" id="photoBox" onclick="document.getElementById('photoIn').click()">
+          <div class="ph"><b>📷</b>Tap to take the photo of the customer's house</div>
+        </div>
+        <input type="file" id="photoIn" accept="image/*" capture="environment" class="hidden" onchange="onPhoto(this)">
+        <div class="row2 hidden" id="photoBtns">
+          <button class="btn ghost" onclick="document.getElementById('photoIn').click()">↺ Retake</button>
+          <button class="btn ghost" onclick="clearPhoto()">✕ Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>👤 Customer <span class="req">name required</span></h2>
+      <div class="pad grid">
+        <label class="full"><span>Serial number</span><input id="f-serial" inputmode="numeric"></label>
+        <label><span>First name <b>*</b></span><input id="f-firstName" autocapitalize="words"></label>
+        <label><span>Last name <b>*</b></span><input id="f-lastName" autocapitalize="words"></label>
+        <label><span>ID number</span><input id="f-idNumber" inputmode="numeric" maxlength="16"></label>
+        <label><span>Phone number</span><input id="f-phone" type="tel" inputmode="tel"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚡ Connection</h2>
+      <div class="pad grid">
+        <label><span>Meter number</span><input id="f-meter" inputmode="numeric"></label>
+        <label><span>UPI number</span><input id="f-upi"></label>
+        <label><span>SC length (m)</span><input id="f-scLength" inputmode="decimal"></label>
+        <label><span>Category</span><select id="f-category"><option value="">— select —</option><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Public Institution</option><option>Agriculture</option><option>Other</option></select></label>
+        <label><span>Transformer name</span><input id="f-transformer"></label>
+        <label><span>Phase</span><select id="f-phase"><option value="">— select —</option><option>1-Phase</option><option>3-Phase</option></select></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🗺 Administrative location <span class="req">village required</span></h2>
+      <div class="pad grid">
+        <label><span>District</span><select id="f-district" onchange="cascade('district')"></select></label>
+        <label><span>Sector</span><select id="f-sector" onchange="cascade('sector')"></select></label>
+        <label><span>Cell</span><select id="f-cell" onchange="cascade('cell')"></select></label>
+        <label><span>Village <b>*</b></span><select id="f-village" onchange="cascade('village')"></select></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📝 Comment</h2>
+      <div class="pad"><textarea id="f-comment" rows="3"></textarea></div>
+    </div>
+  </section>
+
+  <!-- ================= RECORDS ================= -->
+  <section id="v-list" class="hidden">
+    <div class="stats">
+      <div class="stat"><b id="stTotal">0</b><span>records</span></div>
+      <div class="stat"><b id="stToday">0</b><span>today</span></div>
+      <div class="stat"><b id="stIssue">0</b><span>to check</span></div>
+    </div>
+    <input id="q" placeholder="Search name, meter, UPI, village…" oninput="renderList()" style="margin-bottom:12px">
+    <div id="list"></div>
+  </section>
+
+  <!-- ================= EXPORT ================= -->
+  <section id="v-exp" class="hidden">
+    <div class="card">
+      <h2>⬇ Export</h2>
+      <div class="pad exp">
+        <button class="btn pri" onclick="exportPackage()">📦 Full package (ZIP)<small>Excel report + CSV + all house photos + backup file</small></button>
+        <button class="btn dark" onclick="exportXLSXOnly()">📊 Excel report only<small>RESERVE format, Nyanza</small></button>
+        <button class="btn ghost" onclick="exportCSV()">📄 CSV (all fields, for GIS)</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🛟 Backup &amp; restore</h2>
+      <div class="pad exp">
+        <div style="font-size:13px;color:#475569">Records and photos are stored <b>only on this phone</b>. Export the full package every evening and keep it on a computer. To move data to a new phone, restore that ZIP.</div>
+        <button class="btn ghost" onclick="document.getElementById('restoreIn').click()">⤒ Restore from package (ZIP)</button>
+        <input type="file" id="restoreIn" accept=".zip,application/zip" class="hidden" onchange="restorePackage(this)">
+        <div id="storageInfo" style="font-size:12px;color:var(--muted)"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>⚙ App</h2>
+      <div class="pad exp">
+        <button class="btn ghost hidden" id="installBtn" onclick="doInstall()">⤓ Install on this phone</button>
+        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.0 · project: Nyanza</div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <div class="savebar" id="savebar">
   <div class="in">
-    <button class="clear" onclick="newEntry()">Clear</button>
-    <button class="save" id="saveBtn" onclick="saveRecord()">💾 Save &amp; Next</button>
+    <button class="btn ghost" onclick="clearForm(true)">Clear</button>
+    <button class="btn pri save" id="saveBtn" onclick="saveRecord()">💾 Save &amp; next</button>
   </div>
 </div>
 
-<div id="toast"></div>
+<div class="modal hidden" id="agentModal">
+  <div class="box">
+    <h3>Agent name</h3>
+    <p>Enter your full name. It is recorded on every entry and in the report.</p>
+    <input id="agentIn" placeholder="e.g. Jean Uwimana" autocapitalize="words" style="margin-bottom:14px">
+    <button class="btn pri w100" onclick="saveAgent()">Continue</button>
+  </div>
+</div>
+
+<div id="toast" class="hidden"></div>
 
 <script src="leaflet/leaflet.js"></script>
 <script src="rw-admin.js"></script>
 <script src="exceljs.min.js"></script>
+<script src="jszip.min.js"></script>
 <script>
 "use strict";
-
-/* ---------- Field model ---------- */
-const SECTIONS = [
-  { title:"Identification", fields:[
-    {k:"serial",l:"Serial Number",full:true},
-    {k:"poles",l:"Poles"},
-    {k:"houseNo",l:"House No"} ]},
-  { title:"Customer", fields:[
-    {k:"firstName",l:"First Name"},{k:"lastName",l:"Last Name"},
-    {k:"idNumber",l:"ID Number",mode:"numeric"},{k:"phone",l:"Phone Number",type:"tel",mode:"tel"} ]},
-  { title:"Coordinates — TM Rwanda", gps:true, fields:[
-    {k:"x",l:"X · Easting (m)"},{k:"y",l:"Y · Northing (m)"} ]},
-  { title:"Connection", fields:[
-    {k:"meter",l:"Meter Number"},{k:"upi",l:"UPI Number"},
-    {k:"scLength",l:"SC Length (m)",mode:"decimal"},
-    {k:"category",l:"Category",sel:["Residential","Commercial","Industrial","Public Institution","Agriculture","Other"]},
-    {k:"transformer",l:"Transformer Name"},
-    {k:"phase",l:"Phase",sel:["1-Phase","3-Phase"]} ]},
-  { title:"Administrative Location", fields:[
-    {k:"district",l:"District",cascade:"district"},
-    {k:"sector",l:"Sector",cascade:"sector"},
-    {k:"cell",l:"Cell",cascade:"cell"},
-    {k:"village",l:"Village",cascade:"village"} ]},
-  { title:"Notes", fields:[{k:"comment",l:"Comment",area:true,full:true}] },
-];
-const FIELDS = SECTIONS.flatMap(s=>s.fields);
-const STICKY = ["category","transformer","phase","district","sector","cell","village"];
-const KEY = "asbuilt-records-v1";
-/* ---------- Project settings (Nyanza) ---------- */
+/* =====================================================================
+   WK Connect Survey v2 — Nyanza
+   ===================================================================== */
 const DEFAULT_DISTRICT = "Nyanza";
 const PROJECT_TITLE = "PROJECT NAME: DESIGN, SUPPLY, AND INSTALLATION OF LOW VOLTAGE AND MEDIUM VOLTAGE LINES AND SERVICE CONNECTIONS IN NYANZA";
+const TEMPLATE = "nyanza-template.xlsx";
+const KEY = "asbuilt-records-v1";
+const AGENT_KEY = "wkc-agent";
+const TEXT_FIELDS = ["serial","firstName","lastName","idNumber","phone","meter","upi","scLength","category","transformer","phase","district","sector","cell","village","comment"];
+const STICKY = ["category","transformer","phase","district","sector","cell","village"];
 
-/* ---------- State ---------- */
+/* GPS tuning */
+const GPS = { maxAcc:25, minSamples:15, target:3, maxTime:60000, skipFirst:2 };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- storage ---------- */
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY))||[]; }catch(e){ return []; } }
+function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(records)); }catch(e){ toast("Storage full — export and clear old records","err"); } $("count").textContent=records.length; }
+let db=null;
+function idb(){ return new Promise((res,rej)=>{ if(db) return res(db); if(!("indexedDB" in window)) return rej(new Error("no IndexedDB"));
+  const r=indexedDB.open("wkc-photos",1); r.onupgradeneeded=()=>r.result.createObjectStore("photos"); r.onsuccess=()=>{db=r.result;res(db);}; r.onerror=()=>rej(r.error); }); }
+async function photoPut(id,blob){ const d=await idb(); return new Promise((res,rej)=>{ const t=d.transaction("photos","readwrite"); t.objectStore("photos").put(blob,id); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
+async function photoGet(id){ try{ const d=await idb(); return await new Promise((res)=>{ const q=d.transaction("photos").objectStore("photos").get(id); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); }); }catch(e){ return null; } }
+async function photoDel(id){ try{ const d=await idb(); d.transaction("photos","readwrite").objectStore("photos").delete(id); }catch(e){} }
+
+/* ---------- state ---------- */
 let records = load();
 let form = blank();
 let editingId = null;
-let view = "form";
-let accuracy = null, gpsState = "idle", watchId = null, best = Infinity;
-// Weighted-average accumulator for improved precision.
-let gpsAcc = { n:0, sumW:0, sumWlat:0, sumWlng:0, best:Infinity, pts:[], t0:0 };
-function resetGps(){ gpsAcc={ n:0, sumW:0, sumWlat:0, sumWlng:0, best:Infinity, pts:[], t0:0 }; best=Infinity; accuracy=null; }
+let formPhoto = null;            // Blob (downscaled, unstamped)
+let agent = localStorage.getItem(AGENT_KEY) || "";
 
-function blank(){ const o={}; FIELDS.forEach(f=>o[f.k]=""); o.district=DEFAULT_DISTRICT; return o; }
-function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; } }
-function persist(){ localStorage.setItem(KEY, JSON.stringify(records)); document.getElementById("count").textContent = records.length; }
+function blank(){ const o={}; TEXT_FIELDS.forEach(k=>o[k]=""); o.district=DEFAULT_DISTRICT;
+  Object.assign(o,{x:"",y:"",lat:null,lng:null,accuracy:null,samples:0,gpsSource:"",manual:false}); return o; }
 function nextSerial(){ const n=records.map(r=>parseInt(String(r.serial).replace(/\D/g,""),10)).filter(x=>!isNaN(x)); return n.length?Math.max(...n)+1:1; }
 
-/* ---------- TM Rwanda projection (WGS84 -> ITRF2005 / TM Rwanda; NOT EPSG:4083) ---------- */
-function wgs84ToTMRwanda(lat, lon){
-  const a=6378137.0, f=1/298.257222101, e2=f*(2-f), ep2=e2/(1-e2);
-  const k0=0.9999, lon0=30*Math.PI/180, FE=500000, FN=5000000;
-  const phi=lat*Math.PI/180, lam=lon*Math.PI/180;
-  const sp=Math.sin(phi), cp=Math.cos(phi), tp=Math.tan(phi);
+/* ---------- TM Rwanda projection (ITRF2005 / TM Rwanda; GRS80) ---------- */
+const TM={a:6378137.0,f:1/298.257222101,k0:0.9999,lon0:30*Math.PI/180,FE:500000,FN:5000000};
+function wgs84ToTM(lat,lon){
+  const {a,f,k0,lon0,FE,FN}=TM, e2=f*(2-f), ep2=e2/(1-e2);
+  const phi=lat*Math.PI/180, lam=lon*Math.PI/180, sp=Math.sin(phi), cp=Math.cos(phi), tp=Math.tan(phi);
   const N=a/Math.sqrt(1-e2*sp*sp), T=tp*tp, C=ep2*cp*cp, A=(lam-lon0)*cp;
-  const M=a*((1-e2/4-3*e2*e2/64-5*e2*e2*e2/256)*phi
-    -(3*e2/8+3*e2*e2/32+45*e2*e2*e2/1024)*Math.sin(2*phi)
-    +(15*e2*e2/256+45*e2*e2*e2/1024)*Math.sin(4*phi)
-    -(35*e2*e2*e2/3072)*Math.sin(6*phi));
-  const E=FE+k0*N*(A+(1-T+C)*A*A*A/6+(5-18*T+T*T+72*C-58*ep2)*Math.pow(A,5)/120);
-  const Nn=FN+k0*(M+N*tp*(A*A/2+(5-T+9*C+4*C*C)*Math.pow(A,4)/24
-    +(61-58*T+T*T+600*C-330*ep2)*Math.pow(A,6)/720));
-  return { e:E, n:Nn };
+  const M=a*((1-e2/4-3*e2*e2/64-5*e2**3/256)*phi-(3*e2/8+3*e2*e2/32+45*e2**3/1024)*Math.sin(2*phi)+(15*e2*e2/256+45*e2**3/1024)*Math.sin(4*phi)-(35*e2**3/3072)*Math.sin(6*phi));
+  return { e:FE+k0*N*(A+(1-T+C)*A**3/6+(5-18*T+T*T+72*C-58*ep2)*A**5/120),
+           n:FN+k0*(M+N*tp*(A*A/2+(5-T+9*C+4*C*C)*A**4/24+(61-58*T+T*T+600*C-330*ep2)*A**6/720)) };
 }
-
-// Inverse: ITRF2005 / TM Rwanda Easting/Northing -> WGS84 lat/long.
-function tmRwandaToWgs84(E, N){
-  const a=6378137.0, f=1/298.257222101, e2=f*(2-f), ep2=e2/(1-e2);
-  const k0=0.9999, lon0=30*Math.PI/180, FE=500000, FN=5000000;
-  const x=E-FE, y=N-FN, M=y/k0;
-  const mu=M/(a*(1-e2/4-3*e2*e2/64-5*e2*e2*e2/256));
-  const e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
-  const phi1=mu+(3*e1/2-27*e1*e1*e1/32)*Math.sin(2*mu)+(21*e1*e1/16-55*e1*e1*e1*e1/32)*Math.sin(4*mu)+(151*e1*e1*e1/96)*Math.sin(6*mu)+(1097*e1*e1*e1*e1/512)*Math.sin(8*mu);
-  const sp=Math.sin(phi1), cp=Math.cos(phi1), tp=Math.tan(phi1);
-  const C1=ep2*cp*cp, T1=tp*tp;
-  const N1=a/Math.sqrt(1-e2*sp*sp);
-  const R1=a*(1-e2)/Math.pow(1-e2*sp*sp,1.5);
-  const D=x/(N1*k0);
-  const phi=phi1-(N1*tp/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*ep2)*Math.pow(D,4)/24+(61+90*T1+298*C1+45*T1*T1-252*ep2-3*C1*C1)*Math.pow(D,6)/720);
-  const lon=lon0+(D-(1+2*T1+C1)*D*D*D/6+(5-2*C1+28*T1-3*C1*C1+8*ep2+24*T1*T1)*Math.pow(D,5)/120)/cp;
+function tmToWgs84(E,Nn){
+  const {a,f,k0,lon0,FE,FN}=TM, e2=f*(2-f), ep2=e2/(1-e2);
+  const x=E-FE, M=(Nn-FN)/k0, mu=M/(a*(1-e2/4-3*e2*e2/64-5*e2**3/256)), e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
+  const p1=mu+(3*e1/2-27*e1**3/32)*Math.sin(2*mu)+(21*e1*e1/16-55*e1**4/32)*Math.sin(4*mu)+(151*e1**3/96)*Math.sin(6*mu)+(1097*e1**4/512)*Math.sin(8*mu);
+  const sp=Math.sin(p1), cp=Math.cos(p1), tp=Math.tan(p1), C1=ep2*cp*cp, T1=tp*tp, N1=a/Math.sqrt(1-e2*sp*sp), R1=a*(1-e2)/Math.pow(1-e2*sp*sp,1.5), D=x/(N1*k0);
+  const phi=p1-(N1*tp/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*ep2)*D**4/24+(61+90*T1+298*C1+45*T1*T1-252*ep2-3*C1*C1)*D**6/720);
+  const lon=lon0+(D-(1+2*T1+C1)*D**3/6+(5-2*C1+28*T1-3*C1*C1+8*ep2+24*T1*T1)*D**5/120)/cp;
   return { lat:phi*180/Math.PI, lon:lon*180/Math.PI };
 }
-function recLatLng(r){
-  if(r.lat!=null && r.lng!=null) return [r.lat, r.lng];
-  const e=parseFloat(r.x), n=parseFloat(r.y);
-  if(isNaN(e)||isNaN(n)) return null;
-  const p=tmRwandaToWgs84(e,n); return [p.lat, p.lon];
+function recLatLng(r){ if(r.lat!=null&&r.lng!=null) return [r.lat,r.lng]; const e=parseFloat(r.x),n=parseFloat(r.y); if(!isFinite(e)||!isFinite(n)) return null; const p=tmToWgs84(e,n); return [p.lat,p.lon]; }
+function dist(a1,o1,a2,o2){ const R=6371000,dA=(a2-a1)*Math.PI/180,dO=(o2-o1)*Math.PI/180; const s=Math.sin(dA/2)**2+Math.cos(a1*Math.PI/180)*Math.cos(a2*Math.PI/180)*Math.sin(dO/2)**2; return 2*R*Math.asin(Math.sqrt(s)); }
+const grade = a => a==null?null : a<=5?"good" : a<=10?"fair" : "poor";
+const gradeColor = g => g==="good"?"#059669":g==="fair"?"#d97706":g==="poor"?"#dc2626":"#94a3b8";
+
+/* =====================================================================
+   GPS — live watch (header) + averaged capture (satellite-only)
+   A fix is treated as SATELLITE (GNSS) when the device reports an
+   altitude: network (Wi-Fi / cell) positions carry no altitude.
+   ===================================================================== */
+let watchId=null, live=null, cap=null;
+function isSat(c){ return c.altitude!=null && !isNaN(c.altitude); }
+function startWatch(){
+  if(!navigator.geolocation){ setChip("poor","—","Geolocation not available","—"); return; }
+  if(!(window.isSecureContext||location.hostname==="localhost")){ $("secureWarn").classList.remove("hidden"); setChip("poor","—","Needs HTTPS","—"); return; }
+  if(watchId!==null) return;
+  watchId=navigator.geolocation.watchPosition(onFix, err=>{
+    if(err.code===1) setChip("poor","OFF","Location blocked — allow it in browser settings","—");
+    else setChip("wait","…","Searching satellites… go outside","GPS");
+  },{ enableHighAccuracy:true, maximumAge:0, timeout:30000 });
+}
+let lastSat=null;
+function onFix(p){
+  if(cap) capFix(p);
+  const c0=p.coords, sat0=isSat(c0);
+  if(sat0) lastSat={coords:c0,t:Date.now()};
+  // keep showing the last satellite fix if a network position arrives in between
+  const c = (!sat0 && lastSat && Date.now()-lastSat.t<8000) ? lastSat.coords : c0;
+  live={lat:c.latitude,lng:c.longitude,acc:c.accuracy,sat:isSat(c),t:p.timestamp};
+  const g=grade(c.accuracy);
+  setChip(live.sat?g:"poor", "±"+(c.accuracy<10?c.accuracy.toFixed(1):Math.round(c.accuracy))+" m",
+    live.sat ? (g==="good"?"Satellite fix · good":g==="fair"?"Satellite fix · fair — wait or move to open sky":"Satellite fix · weak") : "Network position only — not usable, wait for satellites",
+    live.sat?"🛰 SAT":"📶 NET", live.sat?"sat":"net");
+}
+function setChip(cls,big,lbl,src,srcCls){
+  const c=$("gpsChip"); c.className="gpschip "+(cls||"");
+  $("gpsBig").textContent=big; $("gpsLbl").textContent=lbl; const s=$("gpsSrc"); s.textContent=src; s.className="src "+(srcCls||"");
 }
 
-/* ---------- Build form once ---------- */
-function buildForm(){
-  const host = document.getElementById("formView");
-  host.innerHTML = "";
-  // secure-context warning
-  const secure = window.isSecureContext || location.hostname==="localhost";
-  SECTIONS.forEach(sec=>{
-    const card=document.createElement("div"); card.className="card";
-    const h=document.createElement("h2"); h.textContent=sec.title; card.appendChild(h);
-    const g=document.createElement("div"); g.className="grid";
-    if(sec.gps){
-      const note=document.createElement("div"); note.className="crsnote";
-      note.innerHTML="CRS: ITRF2005 / TM Rwanda (TM, CM 30°E, k0 0.9999, FE 500 000, FN 5 000 000, GRS80). Values in metres. GPS is auto-converted from WGS84.";
-      g.appendChild(note);
-    }
-    sec.fields.forEach(f=>{
-      const wrap=document.createElement("div"); if(f.full||f.area) wrap.className="full";
-      const lab=document.createElement("label");
-      const sp=document.createElement("span"); sp.textContent=f.l; lab.appendChild(sp);
-      let el;
-      if(f.cascade){ el=document.createElement("select");
-        el.innerHTML='<option value="">— select —</option>';
-        el.id="fld-"+f.k;
-        el.addEventListener("change",()=>{ form[f.k]=el.value; onCascadeChange(f.cascade); });
-        lab.appendChild(el); wrap.appendChild(lab); g.appendChild(wrap); return;
-      }
-      if(f.sel){ el=document.createElement("select");
-        el.innerHTML='<option value="">— select —</option>'+f.sel.map(o=>`<option>${o}</option>`).join(""); }
-      else if(f.area){ el=document.createElement("textarea"); el.rows=3; }
-      else { el=document.createElement("input"); if(f.type)el.type=f.type; if(f.mode)el.inputMode=f.mode; }
-      el.id="fld-"+f.k;
-      el.addEventListener("input",()=>{ form[f.k]=el.value;
-        if(f.k==="x"||f.k==="y"){ form.lat=null; form.lng=null; form.manual=true;
-          const e=parseFloat(form.x), n=parseFloat(form.y);
-          if(isFinite(e)&&isFinite(n)){ const g=tmRwandaToWgs84(e,n); form.lat=g.lat; form.lng=g.lon; if(map) setActivePoint(g.lat,g.lon,null,true); }
-          accuracy=null; renderPrecision();
-        }
-      });
-      lab.appendChild(el); wrap.appendChild(lab); g.appendChild(wrap);
-    });
-    if(sec.gps){
-      if(!secure){
-        const w=document.createElement("div"); w.className="warn";
-        w.textContent="⚠ GPS needs HTTPS. Open this page over https:// (see hosting note) to enable automatic capture.";
-        g.appendChild(w);
-      }
-      const btn=document.createElement("button"); btn.className="gpsbtn"; btn.id="gpsBtn";
-      btn.textContent="📍 Capture GPS → TM Rwanda"; btn.onclick=captureGPS;
-      g.appendChild(btn);
-      const prec=document.createElement("div"); prec.className="prec hidden"; prec.id="prec";
-      prec.innerHTML='<div class="row"><span style="color:#64748b">Precision</span><b id="precTxt"></b></div>'
-        +'<div class="track"><div id="precBar"></div></div><div class="hint hidden" id="precHint"></div>';
-      g.appendChild(prec);
-    }
-    card.appendChild(g); host.appendChild(card);
-  });
-  const c=document.createElement("div"); c.className="counter"; c.id="counter"; host.appendChild(c);
-  writeForm();
+function startCapture(){
+  startWatch();
+  cap={ t0:Date.now(), seen:0, fixes:[], rejNet:0, rejAcc:0, rejJump:0, timer:null };
+  form.manual=false;
+  $("capBtn").textContent="⏳ Capturing…"; $("capBtn").disabled=true; $("useBtn").classList.remove("hidden");
+  cap.timer=setInterval(()=>{ if(!cap) return; renderCap(); if(Date.now()-cap.t0>GPS.maxTime) finishCapture(false); },500);
+  renderCap();
+}
+function capFix(p){
+  const c=p.coords; cap.seen++;
+  if(p.timestamp < cap.t0-1000) return;              // stale cached fix
+  if(cap.seen<=GPS.skipFirst) return;                 // first fixes are often coarse
+  if(!isSat(c)){ cap.rejNet++; return; }              // network position: ignore
+  if(c.accuracy>GPS.maxAcc){ cap.rejAcc++; return; }
+  const est=estimate(cap.fixes);
+  if(est && cap.fixes.length>=4){
+    const d=dist(est.lat,est.lng,c.latitude,c.longitude);
+    if(d>Math.max(3*c.accuracy, 3*est.prec, 8)){ cap.rejJump++; return; }
+  }
+  cap.fixes.push({lat:c.latitude,lng:c.longitude,acc:Math.max(c.accuracy,1)});
+  const e2=estimate(cap.fixes);
+  if(cap.fixes.length>=GPS.minSamples && e2.prec<=GPS.target) finishCapture(false);
+}
+// Weighted mean (w = 1/acc²). Precision = worse of (a) reported accuracy reduced
+// for averaging, allowing for correlation between consecutive fixes, and
+// (b) the real scatter of the collected fixes.
+function estimate(f){
+  if(!f.length) return null;
+  let sw=0,sla=0,sln=0; f.forEach(p=>{ const w=1/(p.acc*p.acc); sw+=w; sla+=w*p.lat; sln+=w*p.lng; });
+  const lat=sla/sw, lng=sln/sw;
+  const rmsAcc=Math.sqrt(f.reduce((s,p)=>s+p.acc*p.acc,0)/f.length);
+  const neff=Math.max(1,f.length/5);
+  const model=rmsAcc/Math.sqrt(neff);
+  let scat=0; if(f.length>=3){ scat=Math.sqrt(f.reduce((s,p)=>s+dist(lat,lng,p.lat,p.lng)**2,0)/(f.length-1)); }
+  const best=Math.min(...f.map(p=>p.acc));
+  return { lat, lng, prec:Math.max(model, scat, 1), n:f.length, best };
+}
+function renderCap(){
+  const e=cap?estimate(cap.fixes):null, el=Math.round((Date.now()-(cap?cap.t0:Date.now()))/1000);
+  if(cap){
+    $("capState").textContent = e ? "Averaging satellite fixes…" : "Waiting for satellite fixes…";
+    $("capMeta").textContent = (e?e.n:0)+" fixes · "+el+" s"+(cap.rejNet?" · "+cap.rejNet+" network ignored":"")+(cap.rejJump?" · "+cap.rejJump+" jumps removed":"");
+    const pct = e ? Math.min(100, Math.round(Math.min(e.n/GPS.minSamples,1)*50 + Math.min(GPS.target/e.prec,1)*50)) : Math.min(15,el*2);
+    setRing(e?e.prec:null, pct, e?("est. · "+e.n+" fixes"):"searching");
+    if(e){ const t=wgs84ToTM(e.lat,e.lng); $("capXY").textContent="E "+t.e.toFixed(2)+"  ·  N "+t.n.toFixed(2); if(map) setActivePoint(e.lat,e.lng,e.prec,false,true); }
+  }
+}
+function setRing(prec,pct,sub){
+  const g=grade(prec); const r=$("ring");
+  r.style.setProperty("--c", prec==null?"#94a3b8":gradeColor(g)); r.style.setProperty("--p", pct);
+  $("ringVal").textContent = prec==null?"—":"±"+(prec<10?prec.toFixed(1):Math.round(prec));
+  $("ringSub").textContent = sub;
+}
+function finishCapture(manualStop){
+  if(!cap) return;
+  clearInterval(cap.timer);
+  const e=estimate(cap.fixes), c=cap; cap=null;
+  $("capBtn").disabled=false; $("useBtn").classList.add("hidden");
+  if(!e){ $("capBtn").textContent="🛰 Capture position"; renderPoint();
+    toast(c.rejNet?"Only network positions received — go outside, open sky, and retry":"No satellite fix — move to open sky and retry","err"); return; }
+  const t=wgs84ToTM(e.lat,e.lng);
+  Object.assign(form,{ x:t.e.toFixed(2), y:t.n.toFixed(2), lat:e.lat, lng:e.lng, accuracy:Number(e.prec.toFixed(1)), samples:e.n, gpsSource:"GNSS", manual:false });
+  renderPoint(); if(map) setActivePoint(e.lat,e.lng,e.prec,false);
+  toast("Position captured · ±"+e.prec.toFixed(1)+" m · "+e.n+" satellite fixes", grade(e.prec)==="poor"?"err":"ok");
+}
+function renderPoint(){
+  $("fx").value=form.x||""; $("fy").value=form.y||"";
+  $("capBtn").textContent = (form.x&&form.y) ? "🛰 Re-capture position" : "🛰 Capture position";
+  if(form.manual){ setRing(null,100,"manual"); $("ring").style.setProperty("--c","#2563eb"); $("ringVal").textContent="MAN";
+    $("capState").textContent="Point placed by hand"; $("capXY").textContent="E "+(form.x||"—")+"  ·  N "+(form.y||"—"); $("capMeta").textContent="Drag the pin to fine-tune, or re-capture."; return; }
+  if(form.accuracy!=null){ const g=grade(form.accuracy);
+    setRing(form.accuracy,100,form.samples+" sat. fixes");
+    $("capState").textContent = g==="good"?"✓ Good position":g==="fair"?"Fair position — re-capture if possible":"Weak position — re-capture in open sky";
+    $("capXY").textContent="E "+form.x+"  ·  N "+form.y; $("capMeta").textContent="Source: satellite (GNSS) average"; return; }
+  setRing(null,0,"not captured"); $("capState").textContent="No point yet"; $("capXY").textContent="E —  ·  N —"; $("capMeta").textContent="";
+}
+function typedXY(){
+  form.x=$("fx").value.trim(); form.y=$("fy").value.trim();
+  const e=parseFloat(form.x), n=parseFloat(form.y);
+  Object.assign(form,{manual:true,accuracy:null,samples:0,gpsSource:"Manual",lat:null,lng:null});
+  if(isFinite(e)&&isFinite(n)&&e>300000&&e<700000&&n>4600000&&n<5000000){ const g=tmToWgs84(e,n); form.lat=g.lat; form.lng=g.lon; if(map) setActivePoint(g.lat,g.lon,null,true); }
+  renderPoint(); $("fx").value=form.x; $("fy").value=form.y;
 }
 
+/* ---------- photo ---------- */
+async function onPhoto(inp){
+  const f=inp.files&&inp.files[0]; inp.value=""; if(!f) return;
+  try{ formPhoto=await downscale(f,1600,0.82); showPhoto(formPhoto); toast("Photo added","ok"); }
+  catch(e){ toast("Could not read photo: "+(e.message||e),"err"); }
+}
+function loadImg(blob){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(blob), i=new Image(); i.onload=()=>{res(i);setTimeout(()=>URL.revokeObjectURL(u),1000);}; i.onerror=()=>rej(new Error("image decode failed")); i.src=u; }); }
+async function downscale(file,max,q){
+  const img=await loadImg(file); const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+  const c=document.createElement("canvas"); c.width=Math.round(img.naturalWidth*s); c.height=Math.round(img.naturalHeight*s);
+  c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+  return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error("encode failed")),"image/jpeg",q));
+}
+let photoURL=null;
+function showPhoto(blob){
+  if(photoURL){ URL.revokeObjectURL(photoURL); photoURL=null; }
+  const box=$("photoBox");
+  if(!blob){ box.innerHTML='<div class="ph"><b>📷</b>Tap to take the photo of the customer\'s house</div>'; $("photoBtns").classList.add("hidden"); return; }
+  photoURL=URL.createObjectURL(blob); box.innerHTML='<img src="'+photoURL+'" alt="House photo">'; $("photoBtns").classList.remove("hidden");
+}
+function clearPhoto(){ formPhoto=null; showPhoto(null); }
+// Stamp record data on the photo (done at export, so it always shows final data).
+async function stampPhoto(blob,r){
+  const img=await loadImg(blob); const c=document.createElement("canvas"); c.width=img.naturalWidth; c.height=img.naturalHeight;
+  const g=c.getContext("2d"); g.drawImage(img,0,0);
+  const name=[r.firstName,r.lastName].filter(Boolean).join(" ");
+  const lines=[
+    "#"+(r.serial||"")+"  "+name+(r.meter?"  ·  Meter "+r.meter:""),
+    "E "+(r.x||"—")+"  N "+(r.y||"—")+"  (TM Rwanda"+(r.accuracy!=null?", ±"+r.accuracy+" m":r.manual?", manual":"")+")",
+    [r.district,r.sector,r.cell,r.village].filter(Boolean).join(" / "),
+    fmtDate(r.createdAt)+"  ·  Agent: "+(r.agent||"")
+  ];
+  const fs=Math.max(14,Math.round(c.width/42)), lh=Math.round(fs*1.35), h=lh*lines.length+fs;
+  g.fillStyle="rgba(15,23,42,.72)"; g.fillRect(0,c.height-h,c.width,h);
+  g.fillStyle="#fff"; g.font="600 "+fs+"px sans-serif"; g.textBaseline="top";
+  lines.forEach((t,i)=>g.fillText(t,Math.round(fs*.6),c.height-h+Math.round(fs*.5)+i*lh));
+  return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error("encode failed")),"image/jpeg",0.85));
+}
+function photoName(r){
+  const clean=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"");
+  return [String(r.serial||"x").padStart(4,"0"),clean(r.lastName),clean(r.firstName)].filter(Boolean).join("_")+".jpg";
+}
+
+/* ---------- form ---------- */
 function writeForm(){
-  FIELDS.forEach(f=>{ if(f.cascade) return; const el=document.getElementById("fld-"+f.k); if(el) el.value=form[f.k]||""; });
-  syncCascade();
-  const c=document.getElementById("counter");
-  const filled=FIELDS.filter(f=>String(form[f.k]||"").trim()).length;
-  if(c) c.textContent=filled+" of "+FIELDS.length+" fields filled";
-  document.getElementById("saveBtn").textContent = editingId ? "💾 Update Record" : "💾 Save & Next";
-  renderPrecision();
+  TEXT_FIELDS.forEach(k=>{ const el=$("f-"+k); if(el && el.tagName!=="SELECT") el.value=form[k]||""; });
+  ["category","phase"].forEach(k=>$("f-"+k).value=form[k]||"");
+  syncCascade(); renderPoint();
+  $("saveBtn").textContent = editingId ? "💾 Update record" : "💾 Save & next";
+}
+function readForm(){ TEXT_FIELDS.forEach(k=>{ const el=$("f-"+k); if(el) form[k]=el.value.trim(); }); }
+function clearForm(ask){
+  if(ask && (formPhoto || form.x || $("f-firstName").value || $("f-lastName").value) && !confirm("Clear this entry?")) return;
+  if(cap) finishCapture(false);
+  form=blank(); form.serial=String(nextSerial()); editingId=null; formPhoto=null; showPhoto(null);
+  if(map) clearActive(); writeForm(); window.scrollTo(0,0);
 }
 
-/* ---------- Cascading administrative selects (District→Sector→Cell→Village) ---------- */
-const ADMIN = (typeof window!=="undefined" && window.RW_ADMIN) ? window.RW_ADMIN : {};
-function fillSelect(key, options, current){
-  const el=document.getElementById("fld-"+key); if(!el) return;
-  const opts=(options||[]).slice().sort((a,b)=>a.localeCompare(b));
-  el.innerHTML='<option value="">— select —</option>'+opts.map(o=>'<option'+(o===current?' selected':'')+'>'+o.replace(/</g,"&lt;")+'</option>').join("");
-  // If the saved value isn't in the list (dataset gap), keep it as a selected option.
-  if(current && !opts.includes(current)){
-    el.innerHTML+='<option selected>'+current.replace(/</g,"&lt;")+'</option>';
-  }
-  el.value=current||"";
+/* ---------- cascading admin ---------- */
+const ADMIN = window.RW_ADMIN || {};
+const lists = {
+  district:()=>Object.keys(ADMIN),
+  sector:()=>form.district&&ADMIN[form.district]?Object.keys(ADMIN[form.district]):[],
+  cell:()=>{ const s=ADMIN[form.district]&&ADMIN[form.district][form.sector]; return s?Object.keys(s):[]; },
+  village:()=>{ const s=ADMIN[form.district]&&ADMIN[form.district][form.sector]; return s&&s[form.cell]?s[form.cell]:[]; }
+};
+function fill(k){
+  const el=$("f-"+k), cur=form[k]||"", opts=lists[k]().slice().sort((a,b)=>a.localeCompare(b));
+  el.innerHTML='<option value="">— select —</option>'+opts.map(o=>'<option'+(o===cur?' selected':'')+'>'+esc(o)+'</option>').join("")+(cur&&!opts.includes(cur)?'<option selected>'+esc(cur)+'</option>':'');
+  el.value=cur;
 }
-function districtsList(){ return Object.keys(ADMIN); }
-function sectorsList(d){ return d&&ADMIN[d]?Object.keys(ADMIN[d]):[]; }
-function cellsList(d,s){ return d&&s&&ADMIN[d]&&ADMIN[d][s]?Object.keys(ADMIN[d][s]):[]; }
-function villagesList(d,s,c){ return d&&s&&c&&ADMIN[d]&&ADMIN[d][s]&&ADMIN[d][s][c]?ADMIN[d][s][c]:[]; }
-
-// Rebuild all four selects from current form values (used on load/edit/carry).
-function syncCascade(){
-  fillSelect("district", districtsList(), form.district);
-  fillSelect("sector", sectorsList(form.district), form.sector);
-  fillSelect("cell", cellsList(form.district, form.sector), form.cell);
-  fillSelect("village", villagesList(form.district, form.sector, form.cell), form.village);
-}
-// A parent changed → clear and repopulate its children.
-function onCascadeChange(level){
-  if(level==="district"){ form.sector=""; form.cell=""; form.village="";
-    fillSelect("sector", sectorsList(form.district), ""); fillSelect("cell", [], ""); fillSelect("village", [], ""); }
-  else if(level==="sector"){ form.cell=""; form.village="";
-    fillSelect("cell", cellsList(form.district, form.sector), ""); fillSelect("village", [], ""); }
-  else if(level==="cell"){ form.village="";
-    fillSelect("village", villagesList(form.district, form.sector, form.cell), ""); }
-  const c=document.getElementById("counter");
-  if(c){ const filled=FIELDS.filter(f=>String(form[f.k]||"").trim()).length; c.textContent=filled+" of "+FIELDS.length+" fields filled"; }
+function syncCascade(){ ["district","sector","cell","village"].forEach(fill); }
+function cascade(level){
+  form[level]=$("f-"+level).value;
+  const order=["district","sector","cell","village"], i=order.indexOf(level);
+  order.slice(i+1).forEach(k=>{ form[k]=""; fill(k); });
 }
 
-/* ---------- GPS (single-shot, like WK ASB Customer) ---------- */
-function stopGPS(){ if(watchId!==null){ navigator.geolocation.clearWatch(watchId); watchId=null; } }
-function captureGPS(){
-  if(!navigator.geolocation){ toast("Geolocation not available on this device","err"); return; }
-  form.manual=false; gpsState="tracking"; renderGpsBtn(); renderPrecision();
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const lat=pos.coords.latitude, lng=pos.coords.longitude, acc=pos.coords.accuracy;
-    accuracy=acc; best=acc; gpsAcc.n=1;
-    const t=wgs84ToTMRwanda(lat,lng);
-    form.x=t.e.toFixed(2); form.y=t.n.toFixed(2); form.lat=lat; form.lng=lng;
-    const fx=document.getElementById("fld-x"), fy=document.getElementById("fld-y");
-    if(fx) fx.value=form.x; if(fy) fy.value=form.y;
-    gpsState="done"; renderGpsBtn();
-    showCaptureMarker(lat,lng,acc);
-    renderPrecision();
-    toast("GPS fixed · ±"+Math.round(acc)+" m","ok");
-  }, err=>{
-    gpsState="idle"; renderGpsBtn();
-    toast(err.code===1?"Allow location for this site":err.code===3?"GPS timed out — try open sky":"GPS error: "+(err.message||"no fix"),"err");
-  }, { enableHighAccuracy:true, timeout:20000, maximumAge:0 });
-}
-function haversine(a1,o1,a2,o2){
-  const R=6371000, dLat=(a2-a1)*Math.PI/180, dLon=(o2-o1)*Math.PI/180;
-  const s=Math.sin(dLat/2)**2+Math.cos(a1*Math.PI/180)*Math.cos(a2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return 2*R*Math.asin(Math.sqrt(s));
-}
-function grade(a){ return a==null?null : a<=5?"good" : a<=15?"fair" : "poor"; }
-function renderGpsBtn(){
-  const b=document.getElementById("gpsBtn"); if(!b) return;
-  b.className="gpsbtn"+(gpsState==="tracking"?" tracking":gpsState==="done"?" done":"");
-  b.textContent = gpsState==="tracking" ? "⏳ Acquiring…"
-    : gpsState==="done" ? "📍 Re-capture GPS → TM Rwanda" : "📍 Capture GPS → TM Rwanda";
-}
-function renderPrecision(){
-  const p=document.getElementById("prec"); if(!p) return;
-  const t=document.getElementById("precTxt"), bar=document.getElementById("precBar"), h=document.getElementById("precHint");
-  if(form.manual){                       // point placed/edited by hand
-    p.classList.remove("hidden");
-    t.className=""; t.style.color="#2563eb"; t.textContent="📍 Manual — placed on map";
-    bar.className="fill-fair"; bar.style.width="100%";
-    h.classList.remove("hidden"); h.textContent="Coordinates set by hand on the map. Drag the pin to fine-tune, or re-capture GPS.";
-    return;
-  }
-  t.style.color="";
-  if(accuracy==null){ p.classList.add("hidden"); return; }
-  p.classList.remove("hidden");
-  const g=grade(accuracy);
-  t.className=g; t.textContent="±"+Math.round(accuracy)+" m · "+(g==="good"?"Good":g==="fair"?"Fair":"Poor");
-  bar.className="fill-"+g; bar.style.width=Math.max(6,Math.min(100,(5/accuracy)*100))+"%";
-  h.classList.remove("hidden");
-  if(gpsState==="tracking") h.textContent="Acquiring GPS fix…";
-  else if(gpsState==="done") h.textContent = g==="good" ? "Fixed. Drag the pin to fine-tune if needed." : "Fixed. Move to open sky and re-capture, or drag the pin.";
-  else h.classList.add("hidden");
-}
-
-/* ---------- Actions ---------- */
-function newEntry(){ stopGPS(); if(map) clearCaptureMarker(); form=blank(); form.serial=String(nextSerial()); editingId=null; resetGps(); gpsState="idle"; renderGpsBtn(); writeForm(); setView("form"); }
-function editRecord(id){ stopGPS(); if(map) clearCaptureMarker(); const r=records.find(x=>x._id===id); form=Object.assign(blank(),r); editingId=id; resetGps(); if(r.accuracy!=null){ accuracy=r.accuracy; best=r.accuracy; gpsAcc.n=r.samples||1; } gpsState=r.accuracy!=null?"done":"idle"; renderGpsBtn(); writeForm(); setView("form"); const ll=recLatLng(r); if(map&&ll){ setTimeout(()=>{ map.invalidateSize(); setActivePoint(ll[0],ll[1], r.accuracy, !!r.manual); map.setView(ll,18); }, 80); } }
-function saveRecord(){
-  if(!form.serial && !form.firstName && !form.lastName){ toast("Enter at least a serial or a name","err"); return; }
-  const acc = accuracy!=null ? Number(accuracy.toFixed(1)) : null;
-  const nfix = gpsAcc.n || (editingId ? undefined : 0);
+/* ---------- save / edit / delete ---------- */
+async function saveRecord(){
+  readForm();
+  const miss=[];
+  if(!agent) { askAgent(true); return; }
+  if(!form.firstName && !form.lastName) miss.push("customer name");
+  if(!form.x || !form.y) miss.push("position");
+  if(!formPhoto) miss.push("house photo");
+  if(!form.village) miss.push("village");
+  if(miss.length){ toast("Missing: "+miss.join(", "),"err"); return; }
+  if(cap){ toast("Position capture still running — tap “Use now” or wait","err"); return; }
+  if(form.accuracy!=null && form.accuracy>10 && !confirm("Position precision is ±"+form.accuracy+" m (weak). Save anyway?")) return;
+  if(form.meter){ const dup=records.find(r=>r.meter===form.meter && r._id!==editingId); if(dup && !confirm("Meter "+form.meter+" already exists on record #"+dup.serial+". Save anyway?")) return; }
+  const now=new Date().toISOString();
   if(editingId){
-    records = records.map(r=> r._id===editingId ? Object.assign({},form,{accuracy:acc,samples:gpsAcc.n||r.samples,_id:editingId}) : r);
-    persist(); toast("Record updated","ok"); renderList(); if(markerLayer) drawMarkers(); setView("list");
+    const old=records.find(r=>r._id===editingId);
+    const rec=Object.assign({},old,form,{agent:old.agent||agent,editedBy:agent,updatedAt:now,_id:editingId,photo:true});
+    try{ await photoPut(editingId,formPhoto); }catch(e){ toast("Photo could not be stored: "+e.message,"err"); return; }
+    records=records.map(r=>r._id===editingId?rec:r); persist(); toast("Record #"+rec.serial+" updated","ok");
+    clearForm(false); drawMarkers(); setView("list");
   } else {
-    const rec=Object.assign({},form,{accuracy:acc,samples:nfix,_id:Date.now()+"-"+Math.random().toString(36).slice(2,7)});
-    records.push(rec); persist(); toast("Record saved","ok");
-    const carried={}; STICKY.forEach(k=>carried[k]=form[k]);
-    form=Object.assign(blank(),carried); form.serial=String(nextSerial());
-    editingId=null; resetGps(); gpsState="idle"; renderGpsBtn(); writeForm(); renderList(); if(map){ clearCaptureMarker(); drawMarkers(); }
+    const id=Date.now()+"-"+Math.random().toString(36).slice(2,7);
+    const rec=Object.assign({},form,{agent,createdAt:now,updatedAt:now,_id:id,photo:true});
+    try{ await photoPut(id,formPhoto); }catch(e){ toast("Photo could not be stored: "+e.message,"err"); return; }
+    records.push(rec); persist();
+    const keep={}; STICKY.forEach(k=>keep[k]=form[k]);
+    form=Object.assign(blank(),keep); form.serial=String(nextSerial()); formPhoto=null; showPhoto(null);
+    if(map) clearActive(); writeForm(); drawMarkers(); window.scrollTo(0,0);
+    toast("Record #"+rec.serial+" saved","ok");
   }
 }
-function removeRecord(id){ const r=records.find(x=>x._id===id); if(!r) return; if(!confirm("Delete record #"+(r.serial||"—")+" "+[r.firstName,r.lastName].filter(Boolean).join(" ")+"? This cannot be undone.")) return; records=records.filter(r=>r._id!==id); persist(); renderList(); if(markerLayer) drawMarkers(); toast("Record deleted","ok"); }
-
-/* ---------- List ---------- */
-function renderList(filter){
-  const host=document.getElementById("listView");
-  const q=(document.getElementById("q")?document.getElementById("q").value:"").toLowerCase();
-  const shown = q ? records.filter(r=>FIELDS.some(f=>String(r[f.k]||"").toLowerCase().includes(q))) : records;
-  let html='<div class="search"><input id="q" placeholder="Search name, meter, UPI, village…" oninput="renderList()" value="'+escapeAttr(q)+'"></div>';
-  if(shown.length===0){
-    html+='<div class="empty">'+(records.length?"No matches.":"No records yet. Add one from New Entry.")+'</div>';
-  } else {
-    shown.forEach(r=>{
-      const name=[r.firstName,r.lastName].filter(Boolean).join(" ")||"Unnamed";
-      const ac=r.accuracy!=null?('<span class="acc-'+grade(r.accuracy)+'"> (±'+r.accuracy+' m)</span>'):"";
-      const xy=(r.x||r.y)?('<span class="w">E/N: '+(r.x||"—")+", "+(r.y||"—")+ac+'</span>'):"";
-      html+='<div class="rec"><div><div>'
-        +'<span class="sn">#'+(r.serial||"—")+'</span> <span class="nm">'+esc(name)+'</span> '
-        +(r.phase?'<span class="ph">'+esc(r.phase)+'</span>':'')
-        +'</div><div class="meta">'
-        +(r.meter?'<span>Meter: '+esc(r.meter)+'</span>':'')
-        +(r.upi?'<span>UPI: '+esc(r.upi)+'</span>':'')
-        +(r.transformer?'<span>TX: '+esc(r.transformer)+'</span>':'')
-        +(r.village?'<span>Vill: '+esc(r.village)+'</span>':'')
-        +xy+'</div></div>'
-        +'<div class="acts"><button class="edit" onclick="editRecord(\''+r._id+'\')">✎ Edit</button>'
-        +'<button class="del" onclick="removeRecord(\''+r._id+'\')">🗑 Del</button></div></div>';
-    });
-  }
-  host.innerHTML=html;
-  if(q){ const inp=document.getElementById("q"); inp.focus(); inp.setSelectionRange(q.length,q.length); }
+async function editRecord(id){
+  const r=records.find(x=>x._id===id); if(!r) return;
+  if(cap) finishCapture(false);
+  form=Object.assign(blank(),r); editingId=id;
+  formPhoto=await photoGet(id); showPhoto(formPhoto);
+  writeForm(); setView("form");
+  const ll=recLatLng(r); if(map&&ll) setTimeout(()=>{ map.invalidateSize(); setActivePoint(ll[0],ll[1],r.accuracy,!!r.manual); map.setView(ll,18); },80);
+}
+async function removeRecord(id){
+  const r=records.find(x=>x._id===id); if(!r) return;
+  if(!confirm("Delete record #"+(r.serial||"—")+" "+[r.firstName,r.lastName].filter(Boolean).join(" ")+"?\nThis cannot be undone.")) return;
+  records=records.filter(x=>x._id!==id); persist(); photoDel(id); renderList(); drawMarkers(); toast("Record deleted","info");
 }
 
-/* ---------- View switch ---------- */
+/* ---------- list ---------- */
+const thumbs=new Map();
+function issues(r){ const a=[]; if(!r.photo) a.push("no photo"); if(!r.x||!r.y) a.push("no position"); if(r.accuracy!=null&&r.accuracy>10) a.push("weak GPS"); return a; }
+function renderList(){
+  const q=$("q").value.trim().toLowerCase();
+  const today=new Date().toISOString().slice(0,10);
+  $("stTotal").textContent=records.length;
+  $("stToday").textContent=records.filter(r=>(r.createdAt||"").slice(0,10)===today).length;
+  $("stIssue").textContent=records.filter(r=>issues(r).length).length;
+  const shown=(q?records.filter(r=>TEXT_FIELDS.concat("agent").some(k=>String(r[k]||"").toLowerCase().includes(q))):records).slice().reverse();
+  if(!shown.length){ $("list").innerHTML='<div class="empty">'+(records.length?"No matches.":"No records yet.")+'</div>'; return; }
+  $("list").innerHTML=shown.map(r=>{
+    const name=[r.firstName,r.lastName].filter(Boolean).join(" ")||"Unnamed";
+    const g=grade(r.accuracy);
+    const tag = r.manual?'<span class="tag man">manual</span>' : r.accuracy!=null?'<span class="tag '+g+'">±'+r.accuracy+' m</span>':'<span class="tag miss">no GPS</span>';
+    const iss=issues(r).filter(x=>x!=="weak GPS").map(x=>'<span class="tag miss">'+x+'</span>').join("");
+    return '<div class="rec"><div class="th" data-id="'+r._id+'">🏠</div><div class="bd">'
+      +'<div class="t"><span class="sn">#'+esc(r.serial||"—")+'</span>'+esc(name)+'</div>'
+      +'<div class="m">'+tag+iss+(r.meter?'Meter '+esc(r.meter)+' · ':'')+esc(r.village||"")+'</div>'
+      +'<div class="m">'+esc(r.agent||"")+' · '+fmtDate(r.createdAt)+'</div></div>'
+      +'<div class="ac"><button onclick="editRecord(\''+r._id+'\')">✎ Edit</button><button class="del" onclick="removeRecord(\''+r._id+'\')">🗑</button></div></div>';
+  }).join("");
+  document.querySelectorAll(".th[data-id]").forEach(async el=>{
+    const id=el.dataset.id; let u=thumbs.get(id);
+    if(!u){ const b=await photoGet(id); if(!b) return; u=URL.createObjectURL(b); thumbs.set(id,u); }
+    el.outerHTML='<img class="th" src="'+u+'" alt="">';
+  });
+}
+function fmtDate(iso){ if(!iso) return ""; const d=new Date(iso); const p=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()); }
+
+/* ---------- views ---------- */
 function setView(v){
-  view=v;
-  document.getElementById("entryView").classList.toggle("hidden", v!=="form");
-  document.getElementById("listView").classList.toggle("hidden", v!=="list");
-  document.getElementById("savebar").classList.toggle("hidden", v!=="form");
-  document.getElementById("tab-form").classList.toggle("active", v==="form");
-  document.getElementById("tab-list").classList.toggle("active", v==="list");
-  if(v==="list"){ stopGPS(); if(gpsState==="tracking"){ gpsState=gpsAcc.n>0?"done":"idle"; renderGpsBtn(); } renderList(); }
-  else { updateNet(); initMap(); drawMarkers(); if(map) setTimeout(()=>{ map.invalidateSize(); }, 60); }
+  ["form","list","exp"].forEach(k=>{ $("v-"+k).classList.toggle("hidden",k!==v); $("tab-"+k).classList.toggle("on",k===v); });
+  $("savebar").classList.toggle("hidden",v!=="form");
+  if(v==="list") renderList();
+  if(v==="exp") storageInfo();
+  if(v==="form"){ initMap(); setTimeout(()=>map&&map.invalidateSize(),60); }
+  window.scrollTo(0,0);
+}
+async function storageInfo(){
+  let s=records.length+" records on this phone.";
+  try{ if(navigator.storage&&navigator.storage.estimate){ const e=await navigator.storage.estimate(); s+=" Storage used: "+(e.usage/1048576).toFixed(1)+" MB."; } }catch(e){}
+  try{ if(navigator.storage&&navigator.storage.persist){ const p=await navigator.storage.persist(); s+= p?" Protected from automatic clean-up.":""; } }catch(e){}
+  $("storageInfo").textContent=s;
 }
 
-/* ---------- Excel export (matches RESERVE.xlsx template) ---------- */
-async function exportXLSX(){
-  if(!records.length){ toast("No records to export","err"); return; }
-  if(typeof ExcelJS==="undefined"){ toast("Excel library not loaded","err"); return; }
-  try{
-    const resp=await fetch("reserve-template.xlsx");
-    const buf=await resp.arrayBuffer();
-    const wb=new ExcelJS.Workbook(); await wb.xlsx.load(buf);
-    const ws=wb.worksheets[0];
-    const START=6, LASTFMT=25;            // template has borders on rows 6..25
-    const tmpl=ws.getRow(START);
-    const clone=st=>{ try{ return JSON.parse(JSON.stringify(st)); }catch(e){ return {}; } };
-    // Add X/Y header columns (S=19, T=20), styled to match column R header.
-    try{ ws.mergeCells("S4:S5"); ws.mergeCells("T4:T5"); }catch(e){}
-    const hStyle=clone(ws.getCell("R4").style);
-    ws.getCell("S4").style=clone(hStyle); ws.getCell("S4").value="X (Easting)";
-    ws.getCell("T4").style=clone(hStyle); ws.getCell("T4").value="Y (Northing)";
-    ws.getColumn(19).width=14; ws.getColumn(20).width=14;
-    records.forEach((r,i)=>{
-      const rn=START+i, row=ws.getRow(rn);
-      if(rn>LASTFMT){                       // extend template styling to extra rows
-        for(let c=1;c<=18;c++){ try{ row.getCell(c).style=clone(tmpl.getCell(c).style); }catch(e){} }
-        row.height=tmpl.height;
-      }
-      const set=(c,v)=>{ row.getCell(c).value=(v===undefined||v===null||v==="")?null:v; };
-      const num=v=>{ const n=parseFloat(v); return isFinite(n)?n:(v||null); };
-      set(1, num(r.serial)||(i+1));
-      set(2, r.poles); set(3, r.houseNo);
-      set(4, r.firstName); set(5, r.lastName);
-      set(6, r.idNumber); set(7, r.phone);
-      set(8, r.meter); set(9, r.upi);
-      set(10, num(r.scLength));
-      const resid=/resid/i.test(r.category||"");
-      set(11, resid?"X":null);
-      set(12, (r.category&&!resid)?"X":null);
-      set(13, r.transformer); set(14, r.phase);
-      set(15, r.sector); set(16, r.cell); set(17, r.village); set(18, r.comment);
-      // X / Y (TM Rwanda) — borders copied from column R of this row so they match.
-      const bstyle=clone(row.getCell(18).style);
-      row.getCell(19).style=clone(bstyle); row.getCell(20).style=clone(bstyle);
-      row.getCell(19).numFmt="0.00"; row.getCell(20).numFmt="0.00";
-      set(19, num(r.x)); set(20, num(r.y));
-      row.commit&&row.commit();
-    });
-    // Fill header banner when a single value applies to the whole sheet.
-    const uniq=k=>{ const s=new Set(records.map(r=>String(r[k]||"").trim()).filter(Boolean)); return s.size===1?[...s][0]:""; };
-    const tx=uniq("transformer"); if(tx) ws.getCell("A3").value="TRANSFORMER NAME:   "+tx;
-    ws.getCell("E1").value=PROJECT_TITLE;
-    const sec=uniq("sector"); if(sec) ws.getCell("C2").value="REPORT ON INSTALLED PREPAID METER IN "+sec.toUpperCase()+" SECTOR";
-    const out=await wb.xlsx.writeBuffer();
-    const blob=new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-    const url=URL.createObjectURL(blob), a=document.createElement("a");
-    a.href=url; a.download="RESERVE_"+new Date().toISOString().slice(0,10)+".xlsx"; a.click();
-    setTimeout(()=>URL.revokeObjectURL(url),4000); toast("Exported "+records.length+" record(s) to Excel","ok");
+/* =====================================================================
+   EXPORT
+   ===================================================================== */
+function stamp(){ const d=new Date(),p=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"_"+p(d.getHours())+p(d.getMinutes()); }
+function safeAgent(){ return (agent||"agent").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_"); }
+function download(blob,name){ const u=URL.createObjectURL(blob), a=document.createElement("a"); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),8000); }
+function sorted(){ return records.slice().sort((a,b)=>(parseInt(a.serial)||0)-(parseInt(b.serial)||0)); }
+
+async function buildXLSX(){
+  if(typeof ExcelJS==="undefined") throw new Error("Excel library not loaded");
+  const buf=await (await fetch(TEMPLATE)).arrayBuffer();
+  const wb=new ExcelJS.Workbook(); await wb.xlsx.load(buf);
+  const ws=wb.worksheets[0], START=6, LASTFMT=25, tmpl=ws.getRow(START);
+  const clone=st=>{ try{ return JSON.parse(JSON.stringify(st)); }catch(e){ return {}; } };
+  const uniq=k=>{ const s=new Set(records.map(r=>String(r[k]||"").trim()).filter(Boolean)); return s.size===1?[...s][0]:""; };
+  ws.getCell("D1").value=PROJECT_TITLE;
+  const sec=uniq("sector"); ws.getCell("A2").value="REPORT ON INSTALLED PREPAID METER"+(sec?" IN "+sec.toUpperCase()+" SECTOR":"");
+  const tx=uniq("transformer"); ws.getCell("A3").value="TRANSFORMER NAME:   "+(tx||"");
+  const num=v=>{ const n=parseFloat(v); return isFinite(n)&&String(v).trim()!==""?n:(v||null); };
+  sorted().forEach((r,i)=>{
+    const row=ws.getRow(START+i);
+    if(START+i>LASTFMT){ for(let c=1;c<=20;c++) row.getCell(c).style=clone(tmpl.getCell(c).style); row.height=tmpl.height; }
+    const set=(c,v)=>{ row.getCell(c).value=(v===undefined||v===null||v==="")?null:v; };
+    const resid=/resid/i.test(r.category||"");
+    set(1,num(r.serial)||(i+1)); set(2,r.firstName); set(3,r.lastName); set(4,r.idNumber); set(5,r.phone);
+    set(6,r.meter); set(7,r.upi); set(8,num(r.scLength)); set(9,resid?"X":null); set(10,(r.category&&!resid)?"X":null);
+    set(11,r.transformer); set(12,r.phase); set(13,r.sector); set(14,r.cell); set(15,r.village); set(16,r.comment);
+    set(17,r.agent);
+    if(r.photo){ const pn=photoName(r), pc=row.getCell(18); pc.style=clone(pc.style); pc.value={ text:pn, hyperlink:"photos/"+pn }; pc.font=Object.assign(clone(pc.font||{}),{color:{argb:"FF0563C1"},underline:true}); }
+    set(19,num(r.x)); set(20,num(r.y)); row.getCell(19).numFmt="0.00"; row.getCell(20).numFmt="0.00";
+    row.commit&&row.commit();
+  });
+  return await wb.xlsx.writeBuffer();
+}
+function buildCSV(){
+  const H=[["serial","Serial"],["firstName","First Name"],["lastName","Last Name"],["idNumber","ID Number"],["phone","Phone"],["meter","Meter Number"],["upi","UPI"],["scLength","SC Length (m)"],["category","Category"],["transformer","Transformer"],["phase","Phase"],["district","District"],["sector","Sector"],["cell","Cell"],["village","Village"],["comment","Comment"],["x","X Easting (TM Rwanda)"],["y","Y Northing (TM Rwanda)"],["lat","Latitude (WGS84)"],["lng","Longitude (WGS84)"],["accuracy","GPS Precision (m)"],["samples","GPS Fixes"],["gpsSource","Point Source"],["agent","Agent"],["photoFile","Photo"],["createdAt","Created"],["updatedAt","Updated"]];
+  const e=v=>{ const s=String(v==null?"":v); return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const rows=sorted().map(r=>{ const ll=recLatLng(r)||[]; const o=Object.assign({},r,{lat:ll[0]!=null?ll[0].toFixed(7):"",lng:ll[1]!=null?ll[1].toFixed(7):"",gpsSource:r.manual?"Manual":(r.gpsSource||(r.accuracy!=null?"GPS":"")),photoFile:r.photo?"photos/"+photoName(r):""}); return H.map(h=>e(o[h[0]])).join(","); });
+  return "﻿"+[H.map(h=>h[1]).join(",")].concat(rows).join("\r\n");
+}
+async function exportXLSXOnly(){
+  if(!records.length) return toast("No records to export","err");
+  try{ toast("Building Excel…","info"); const b=await buildXLSX();
+    download(new Blob([b],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),"RESERVE_Nyanza_"+stamp()+".xlsx"); toast("Excel exported ("+records.length+")","ok");
   }catch(e){ console.error(e); toast("Excel export failed: "+(e.message||e),"err"); }
 }
-
-/* ---------- CSV ---------- */
 function exportCSV(){
-  if(!records.length){ toast("No records to export","err"); return; }
-  const headers=FIELDS.map(f=>f.l).concat("GPS Accuracy (m)","Latitude (WGS84)","Longitude (WGS84)","Point Source");
-  const escv=v=>{ const s=String(v==null?"":v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
-  const rows=records.map(r=>{ const ll=recLatLng(r); return FIELDS.map(f=>escv(r[f.k])).concat(escv(r.accuracy), ll?ll[0].toFixed(7):"", ll?ll[1].toFixed(7):"", r.manual?"Manual":(r.accuracy!=null?"GPS":"")).join(","); });
-  const csv=[headers.join(","),...rows].join("\r\n");
-  const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
-  const url=URL.createObjectURL(blob), a=document.createElement("a");
-  a.href=url; a.download="asbuilt_"+new Date().toISOString().slice(0,10)+".csv"; a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),4000); toast("Exported "+records.length+" record(s)","ok");
+  if(!records.length) return toast("No records to export","err");
+  download(new Blob([buildCSV()],{type:"text/csv;charset=utf-8"}),"WKConnect_Nyanza_"+stamp()+".csv"); toast("CSV exported","ok");
 }
-
-/* ---------- utils ---------- */
-function esc(s){ return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
-function escapeAttr(s){ return String(s).replace(/"/g,"&quot;"); }
-let toastT=null;
-function toast(msg,kind){ const t=document.getElementById("toast"); t.className="toast "+(kind||"ok"); t.textContent=msg; clearTimeout(toastT); toastT=setTimeout(()=>t.className="toast hidden",2500); }
-
-/* ---------- Map ---------- */
-let map=null, satLayer=null, osmLayer=null, markerLayer=null, meMarker=null;
-let captureMarker=null, captureCircle=null;
-const RW_CENTER=[-1.94,29.87];
-
-function initMap(){
-  if(map) return;
-  satLayer=L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    { maxZoom:19, attribution:"Imagery © Esri, Maxar, Earthstar Geographics" });
-  osmLayer=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-    { maxZoom:19, attribution:"© OpenStreetMap contributors" });
-  map=L.map("map",{ center:RW_CENTER, zoom:8, layers:[satLayer] });
-  L.control.layers({ "Satellite (Esri)":satLayer, "Streets (OSM)":osmLayer }, null, { position:"topright" }).addTo(map);
-  markerLayer=L.layerGroup().addTo(map);
-  map.on("click",e=>{ if(tapToSet) applyManualPoint(e.latlng.lat, e.latlng.lng); });
-  drawMarkers();
-  setTimeout(()=>{ map.invalidateSize(); fitPoints(); }, 60);
-}
-
-function drawMarkers(){
-  if(!markerLayer) return;
-  markerLayer.clearLayers();
-  records.forEach(r=>{
-    const ll=recLatLng(r); if(!ll) return;
-    const name=[r.firstName,r.lastName].filter(Boolean).join(" ")||"Unnamed";
-    const col=r.manual?"#2563eb":r.accuracy==null?"#0ea5e9":r.accuracy<=5?"#10b981":r.accuracy<=15?"#f59e0b":"#f43f5e";
-    L.circleMarker(ll,{ radius:7, color:"#fff", weight:2, fillColor:col, fillOpacity:1 })
-      .bindPopup("<b>#"+esc(r.serial||"—")+" · "+esc(name)+"</b><br>"
-        +"E: "+esc(r.x||"—")+"  N: "+esc(r.y||"—")+(r.manual?"  (manual)":(r.accuracy!=null?"  (±"+r.accuracy+" m)":""))
-        +(r.meter?"<br>Meter: "+esc(r.meter):"")
-        +(r.transformer?"<br>TX: "+esc(r.transformer):"")
-        +(r.village?"<br>"+esc(r.village):""))
-      .addTo(markerLayer);
-  });
-}
-
-// The active point (being captured or edited). Draggable; keeps X/Y in sync.
-let tapToSet=false;
-function activeColor(acc,manual){ return manual?"#2563eb":acc==null?"#0ea5e9":acc<=5?"#10b981":acc<=15?"#f59e0b":"#f43f5e"; }
-
-function showCaptureMarker(lat,lng,acc){ setActivePoint(lat,lng,acc,false); }
-
-function activePinIcon(col){
-  return L.divIcon({ className:"", iconSize:[22,22], iconAnchor:[11,11],
-    html:'<div style="width:18px;height:18px;border-radius:50%;background:'+col+';border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 1px 4px rgba(0,0,0,.4);cursor:grab"></div>' });
-}
-function setActivePoint(lat,lng,acc,manual){
-  if(!map) return;
-  const col=activeColor(acc,manual);
-  if(!captureMarker){
-    captureCircle=L.circle([lat,lng],{ radius:manual?0:(acc||10), color:col, weight:1, fillColor:col, fillOpacity:manual?0:.12 }).addTo(map);
-    captureMarker=L.marker([lat,lng],{ draggable:true, autoPan:true, icon:activePinIcon(col), zIndexOffset:1000, title:"Drag to adjust the point" }).addTo(map);
-    captureMarker.on("drag",e=>{ const p=e.target.getLatLng(); if(captureCircle) captureCircle.setLatLng(p); });
-    captureMarker.on("dragend",e=>{ const p=e.target.getLatLng(); applyManualPoint(p.lat,p.lng); });
-    map.setView([lat,lng], Math.max(map.getZoom(),18));
-  } else {
-    captureMarker.setLatLng([lat,lng]).setIcon(activePinIcon(col));
-    captureCircle.setLatLng([lat,lng]).setRadius(manual?0:(acc||10)).setStyle({ color:col, fillColor:col, fillOpacity:manual?0:.12 });
-  }
-  captureMarker.bindPopup(manual?"Manual point — drag to fine-tune":"Captured — drag to adjust");
-}
-
-// User moved the point by hand (drag, tap, or typed E/N): recompute and flag manual.
-function applyManualPoint(lat,lng){
-  form.lat=lat; form.lng=lng; form.manual=true;
-  const t=wgs84ToTMRwanda(lat,lng);
-  form.x=t.e.toFixed(2); form.y=t.n.toFixed(2);
-  const fx=document.getElementById("fld-x"), fy=document.getElementById("fld-y");
-  if(fx) fx.value=form.x; if(fy) fy.value=form.y;
-  accuracy=null;                       // precision no longer GPS-derived
-  stopGPS(); if(gpsState==="tracking"){ gpsState="done"; renderGpsBtn(); }
-  setActivePoint(lat,lng,null,true);
-  renderPrecision();
-}
-
-function toggleTapToSet(){
-  tapToSet=!tapToSet;
-  const b=document.getElementById("tapBtn");
-  if(b){ b.classList.toggle("primary",tapToSet); b.textContent=tapToSet?"✋ Tap-to-set: ON":"✋ Tap-to-set"; }
-  toast(tapToSet?"Tap the map to place the point":"Tap-to-set off","ok");
-}
-
-function clearCaptureMarker(){
-  if(captureMarker){ map.removeLayer(captureMarker); captureMarker=null; }
-  if(captureCircle){ map.removeLayer(captureCircle); captureCircle=null; }
-}
-function fitPoints(){
-  if(!map) return;
-  const lls=records.map(recLatLng).filter(Boolean);
-  if(captureMarker) lls.push(captureMarker.getLatLng());
-  if(lls.length){ map.fitBounds(L.latLngBounds(lls).pad(0.25), { maxZoom:18 }); }
-  else { map.setView(RW_CENTER, 8); }
-}
-
-function locateMe(){
-  if(!map) return;
-  if(!navigator.geolocation){ toast("Geolocation not supported","err"); return; }
-  navigator.geolocation.getCurrentPosition(p=>{
-    const ll=[p.coords.latitude,p.coords.longitude];
-    if(meMarker) map.removeLayer(meMarker);
-    meMarker=L.circleMarker(ll,{ radius:8, color:"#fff", weight:3, fillColor:"#2563eb", fillOpacity:1 })
-      .bindPopup("You are here (±"+p.coords.accuracy.toFixed(0)+" m)").addTo(map);
-    map.setView(ll, 17); meMarker.openPopup();
-  }, err=>toast(err.code===1?"Location permission denied":"Could not get location","err"),
-  { enableHighAccuracy:true, timeout:15000 });
-}
-
-/* Pre-download visible satellite tiles into cache for offline field use. */
-function lon2tile(lon,z){ return Math.floor((lon+180)/360*Math.pow(2,z)); }
-function lat2tile(lat,z){ return Math.floor((1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*Math.pow(2,z)); }
-
-async function saveAreaOffline(){
-  if(!map){ return; }
-  if(!navigator.onLine){ toast("Go online first to download tiles","err"); return; }
-  const b=map.getBounds();
-  const z0=Math.max(1,Math.round(map.getZoom()));
-  const zooms=[z0, z0+1, z0+2].filter(z=>z<=19);
-  const urls=[];
-  zooms.forEach(z=>{
-    const xMin=lon2tile(b.getWest(),z), xMax=lon2tile(b.getEast(),z);
-    const yMin=lat2tile(b.getNorth(),z), yMax=lat2tile(b.getSouth(),z);
-    for(let x=xMin;x<=xMax;x++) for(let y=yMin;y<=yMax;y++)
-      urls.push("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/"+z+"/"+y+"/"+x);
-  });
-  if(urls.length>1500){ toast("Area too large — zoom in a bit","err"); return; }
-  const bar=document.getElementById("dlbar"), fill=document.getElementById("dlfill"), btn=document.getElementById("dlBtn");
-  bar.classList.remove("hidden"); fill.style.width="0%"; btn.disabled=true;
-  let done=0, ok=0;
-  const cache = ("caches" in window) ? await caches.open("asbuilt-tiles-v1") : null;
-  const CONC=6;
-  async function worker(list){
-    for(const u of list){
-      try{ const res=await fetch(u,{ mode:"no-cors" }); if(cache) await cache.put(u,res.clone()); ok++; }
-      catch(e){}
-      done++; fill.style.width=Math.round(done/urls.length*100)+"%";
+async function exportPackage(){
+  if(!records.length) return toast("No records to export","err");
+  if(typeof JSZip==="undefined") return toast("ZIP library not loaded","err");
+  try{
+    const z=new JSZip(), base="WKConnect_Nyanza_"+stamp()+"_"+safeAgent();
+    toast("Building Excel…","info");
+    z.file("RESERVE_Nyanza_"+stamp()+".xlsx", await buildXLSX());
+    z.file("data.csv", buildCSV());
+    const ph=z.folder("photos"), raw=z.folder("backup_photos"); let n=0, i=0;
+    for(const r of sorted()){
+      i++; if(i%5===0) toast("Photos "+i+"/"+records.length+"…","info");
+      const b=await photoGet(r._id); if(!b) continue;
+      ph.file(photoName(r), await stampPhoto(b,r)); raw.file(r._id+".jpg", b); n++;
     }
+    z.file("backup.json", JSON.stringify({app:"WK Connect Survey",version:2,exportedAt:new Date().toISOString(),agent,records},null,1));
+    toast("Compressing…","info");
+    const blob=await z.generateAsync({type:"blob",compression:"STORE"});
+    download(blob, base+".zip");
+    toast("Package exported · "+records.length+" records · "+n+" photos","ok");
+  }catch(e){ console.error(e); toast("Export failed: "+(e.message||e),"err"); }
+}
+async function restorePackage(inp){
+  const f=inp.files&&inp.files[0]; inp.value=""; if(!f) return;
+  try{
+    const z=await JSZip.loadAsync(f), bj=z.file("backup.json");
+    if(!bj) throw new Error("backup.json not found in this ZIP");
+    const data=JSON.parse(await bj.async("string")), incoming=data.records||[];
+    const have=new Set(records.map(r=>r._id)); let add=0, ph=0;
+    for(const r of incoming){
+      const pf=z.file("backup_photos/"+r._id+".jpg");
+      if(pf){ await photoPut(r._id, new Blob([await pf.async("arraybuffer")],{type:"image/jpeg"})); ph++; }
+      if(!have.has(r._id)){ records.push(r); add++; }
+    }
+    persist(); drawMarkers(); renderList(); storageInfo();
+    toast("Restored "+add+" new records, "+ph+" photos","ok");
+  }catch(e){ toast("Restore failed: "+(e.message||e),"err"); }
+}
+
+/* ---------- agent ---------- */
+function askAgent(force){ if(agent && !force) return; $("agentIn").value=agent; $("agentModal").classList.remove("hidden"); setTimeout(()=>$("agentIn").focus(),50); }
+function saveAgent(){
+  const v=$("agentIn").value.trim().replace(/\s+/g," ");
+  if(v.length<3 || !/\s/.test(v)){ toast("Enter first and last name","err"); return; }
+  agent=v; localStorage.setItem(AGENT_KEY,agent); $("agentChip").textContent="👤 "+agent; $("agentModal").classList.add("hidden");
+}
+
+/* ---------- toast ---------- */
+let tT=null;
+function toast(m,k){ const t=$("toast"); t.className=k||"ok"; t.textContent=m; clearTimeout(tT); tT=setTimeout(()=>t.className="hidden",k==="err"?4500:2600); }
+
+/* =====================================================================
+   MAP
+   ===================================================================== */
+let map=null, markerLayer=null, meMarker=null, active=null, activeCircle=null, tapMode=false;
+const RW_CENTER=[-2.35,29.74];
+function initMap(){
+  if(map||typeof L==="undefined") return;
+  const sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagery © Esri"});
+  const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"});
+  map=L.map("map",{center:RW_CENTER,zoom:11,layers:[sat]});
+  L.control.layers({"Satellite":sat,"Streets":osm},null,{position:"topright"}).addTo(map);
+  markerLayer=L.layerGroup().addTo(map);
+  map.on("click",e=>{ if(tapMode) manualPoint(e.latlng.lat,e.latlng.lng); });
+  drawMarkers(); setTimeout(()=>{ map.invalidateSize(); fitPoints(); },80);
+}
+function drawMarkers(){
+  if(!markerLayer) return; markerLayer.clearLayers();
+  records.forEach(r=>{ const ll=recLatLng(r); if(!ll) return;
+    const col=r.manual?"#2563eb":gradeColor(grade(r.accuracy));
+    L.circleMarker(ll,{radius:7,color:"#fff",weight:2,fillColor:col,fillOpacity:1})
+      .bindPopup("<b>#"+esc(r.serial)+" · "+esc([r.firstName,r.lastName].filter(Boolean).join(" "))+"</b><br>E "+esc(r.x)+"  N "+esc(r.y)+(r.accuracy!=null?" (±"+r.accuracy+" m)":"")+(r.meter?"<br>Meter "+esc(r.meter):"")).addTo(markerLayer); });
+}
+function pinIcon(col){ return L.divIcon({className:"",iconSize:[24,24],iconAnchor:[12,12],html:'<div style="width:20px;height:20px;border-radius:50%;background:'+col+';border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.4)"></div>'}); }
+function setActivePoint(lat,lng,acc,manual,noZoom){
+  if(!map) return; const col=manual?"#2563eb":gradeColor(grade(acc));
+  if(!active){
+    activeCircle=L.circle([lat,lng],{radius:manual?0:(acc||10),color:col,weight:1,fillColor:col,fillOpacity:.12}).addTo(map);
+    active=L.marker([lat,lng],{draggable:true,icon:pinIcon(col),zIndexOffset:1000}).addTo(map);
+    active.on("drag",e=>activeCircle.setLatLng(e.target.getLatLng()));
+    active.on("dragend",e=>{ const p=e.target.getLatLng(); manualPoint(p.lat,p.lng); });
+    map.setView([lat,lng],Math.max(map.getZoom(),18));
+  } else {
+    active.setLatLng([lat,lng]).setIcon(pinIcon(col));
+    activeCircle.setLatLng([lat,lng]).setRadius(manual?0:(acc||10)).setStyle({color:col,fillColor:col,fillOpacity:manual?0:.12});
+    if(!noZoom) map.panTo([lat,lng]);
   }
-  const chunks=Array.from({length:CONC},(_,i)=>urls.filter((_,idx)=>idx%CONC===i));
-  await Promise.all(chunks.map(worker));
-  btn.disabled=false;
-  setTimeout(()=>bar.classList.add("hidden"),800);
-  toast("Saved "+ok+" tiles for offline use","ok");
 }
-
-function updateNet(){
-  const p=document.getElementById("netPill"); if(!p) return;
-  const on=navigator.onLine;
-  p.className="netpill "+(on?"net-on":"net-off"); p.textContent=on?"● Online":"● Offline";
+function clearActive(){ if(active){ map.removeLayer(active); active=null; } if(activeCircle){ map.removeLayer(activeCircle); activeCircle=null; } }
+function manualPoint(lat,lng){
+  if(cap) finishCapture(false);
+  const t=wgs84ToTM(lat,lng);
+  Object.assign(form,{lat,lng,x:t.e.toFixed(2),y:t.n.toFixed(2),manual:true,accuracy:null,samples:0,gpsSource:"Manual"});
+  setActivePoint(lat,lng,null,true,true); renderPoint();
 }
-window.addEventListener("online",updateNet);
-window.addEventListener("offline",updateNet);
+function toggleTap(){ tapMode=!tapMode; $("tapBtn").classList.toggle("on",tapMode); $("tapBtn").textContent=tapMode?"✋ Tap-to-set: ON":"✋ Tap-to-set"; toast(tapMode?"Tap the map to place the point":"Tap-to-set off","info"); }
+function fitPoints(){
+  if(!map) return; const lls=records.map(recLatLng).filter(Boolean); if(active) lls.push(active.getLatLng());
+  if(lls.length) map.fitBounds(L.latLngBounds(lls).pad(.25),{maxZoom:18}); else if(live) map.setView([live.lat,live.lng],16); else map.setView(RW_CENTER,11);
+}
+function locateMe(){
+  if(!map) return; if(!live){ toast("No position yet — waiting for GPS","err"); startWatch(); return; }
+  if(meMarker) map.removeLayer(meMarker);
+  meMarker=L.circleMarker([live.lat,live.lng],{radius:8,color:"#fff",weight:3,fillColor:"#2563eb",fillOpacity:1}).bindPopup("You (±"+Math.round(live.acc)+" m)").addTo(map);
+  map.setView([live.lat,live.lng],17);
+}
+function lon2tile(lon,z){ return Math.floor((lon+180)/360*2**z); }
+function lat2tile(lat,z){ return Math.floor((1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*2**z); }
+async function saveAreaOffline(){
+  if(!map) return; if(!navigator.onLine) return toast("Go online first to download map tiles","err");
+  const b=map.getBounds(), z0=Math.max(1,Math.round(map.getZoom())), urls=[];
+  [z0,z0+1,z0+2].filter(z=>z<=19).forEach(z=>{ for(let x=lon2tile(b.getWest(),z);x<=lon2tile(b.getEast(),z);x++) for(let y=lat2tile(b.getNorth(),z);y<=lat2tile(b.getSouth(),z);y++) urls.push("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/"+z+"/"+y+"/"+x); });
+  if(urls.length>1500) return toast("Area too large — zoom in","err");
+  const bar=$("dlbar"), fillb=$("dlfill"); bar.classList.remove("hidden"); $("dlBtn").disabled=true;
+  let done=0, ok=0; const cache=("caches" in window)?await caches.open("asbuilt-tiles-v1"):null;
+  const work=async list=>{ for(const u of list){ try{ const r=await fetch(u,{mode:"cors"}); if(r.ok&&cache){ await cache.put(u,r.clone()); ok++; } }catch(e){} done++; fillb.style.width=Math.round(done/urls.length*100)+"%"; } };
+  await Promise.all(Array.from({length:6},(_,i)=>work(urls.filter((_,k)=>k%6===i))));
+  $("dlBtn").disabled=false; setTimeout(()=>bar.classList.add("hidden"),800); toast("Saved "+ok+" map tiles for offline use","ok");
+}
+function updateNet(){ const p=$("netPill"), on=navigator.onLine; p.className="netpill "+(on?"net-on":"net-off"); p.textContent=on?"● Online":"● Offline"; }
+addEventListener("online",updateNet); addEventListener("offline",updateNet);
 
-/* ---------- PWA install ---------- */
-
+/* ---------- PWA ---------- */
 let deferredPrompt=null;
-window.addEventListener("beforeinstallprompt",e=>{
-  e.preventDefault(); deferredPrompt=e;
-  const b=document.getElementById("installBtn"); if(b) b.style.display="inline-block";
-});
-function doInstall(){
-  if(!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.finally(()=>{ deferredPrompt=null; const b=document.getElementById("installBtn"); if(b) b.style.display="none"; });
-}
-window.addEventListener("appinstalled",()=>{ const b=document.getElementById("installBtn"); if(b) b.style.display="none"; toast("App installed","ok"); });
-
-// iOS has no install prompt — show Add to Home Screen hint (only in Safari tab, not when already installed).
-(function(){
-  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  const standalone = window.navigator.standalone===true || window.matchMedia("(display-mode: standalone)").matches;
-  if(isIOS && !standalone) document.getElementById("iosHint").classList.remove("hidden");
-})();
-
-// Register service worker for offline use (needs HTTPS).
-if("serviceWorker" in navigator){
-  window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
-}
+addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredPrompt=e; $("installBtn").classList.remove("hidden"); });
+function doInstall(){ if(!deferredPrompt) return; deferredPrompt.prompt(); deferredPrompt.userChoice.finally(()=>{ deferredPrompt=null; $("installBtn").classList.add("hidden"); }); }
+(function(){ const ios=/iphone|ipad|ipod/i.test(navigator.userAgent), sa=navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches); if(ios&&!sa) $("iosHint").classList.remove("hidden"); })();
+if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 
 /* ---------- init ---------- */
-buildForm();
-form.serial=String(nextSerial()); writeForm();
-persist();
-setView("form");   // New Entry + map on page 1
+$("agentChip").textContent="👤 "+(agent||"Set agent");
+form.serial=String(nextSerial());
+persist(); writeForm(); updateNet(); setView("form");
+startWatch();
+if(!agent) askAgent(false);
 </script>
 </body>
 </html>
