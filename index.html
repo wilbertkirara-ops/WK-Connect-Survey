@@ -571,7 +571,7 @@ function typedXY(){
   const e=parseFloat(form.x), n=parseFloat(form.y);
   Object.assign(form,{manual:true,accuracy:null,samples:0,gpsSource:"Manual",lat:null,lng:null});
   if(isFinite(e)&&isFinite(n)&&e>300000&&e<700000&&n>4600000&&n<5000000){ const g=tmToWgs84(e,n); form.lat=g.lat; form.lng=g.lon; if(map) setActivePoint(g.lat,g.lon,null,true); }
-  renderPoint(); checkDup(); autoAdmin(); $("fx").value=form.x; $("fy").value=form.y;
+  renderPoint(); checkDup(); autoAdmin(); suggestTx(); $("fx").value=form.x; $("fy").value=form.y;
 }
 
 /* ---------- photo ---------- */
@@ -1182,7 +1182,7 @@ function manualPoint(lat,lng){
   if(cap) finishCapture(false);
   const t=wgs84ToTM(lat,lng);
   Object.assign(form,{lat,lng,x:t.e.toFixed(2),y:t.n.toFixed(2),manual:true,accuracy:null,samples:0,gpsSource:"Manual"});
-  setActivePoint(lat,lng,null,true,true); renderPoint(); checkDup(); autoAdmin();
+  setActivePoint(lat,lng,null,true,true); renderPoint(); checkDup(); autoAdmin(); suggestTx();
 }
 function toggleTap(){ tapMode=!tapMode; $("tapBtn").classList.toggle("on",tapMode); $("tapBtn").textContent=tapMode?"✋ Tap-to-set: ON":"✋ Tap-to-set"; toast(tapMode?"Tap the map to place the point":"Tap-to-set off","info"); }
 function fitPoints(){
