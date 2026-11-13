@@ -135,6 +135,14 @@
   .scanbox{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:4/3;margin-bottom:12px}
   .scanbox video{width:100%;height:100%;object-fit:cover;display:block}
   .scanbox .frame{position:absolute;left:10%;right:10%;top:30%;bottom:30%;border:3px solid #22c55e;border-radius:10px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+  .plan{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .plan:last-child{border-bottom:0}
+  .plan .pn{flex:1;min-width:0}
+  .plan .pn b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .plan .pn small{color:var(--muted);font-size:12px}
+  .plan .dist{font:700 12px ui-monospace,Menlo,monospace;color:#0369a1;white-space:nowrap}
+  .plan button{border:0;background:var(--accent);color:#fff;border-radius:9px;padding:8px 12px;font-weight:700;font-size:13px}
+  .chipbtn{border:1.5px solid #cbd5e1;background:#fff;border-radius:99px;padding:6px 11px;font-size:12.5px;font-weight:700;color:#334155}
   .hidden{display:none!important}
   .leaflet-popup-content{font-size:13px;line-height:1.5}
 </style>
@@ -206,6 +214,18 @@
       <div id="map"></div>
     </div>
 
+    <div class="card" id="planCard">
+      <h2>🏠 Planned customer (LV design) <span class="req" id="planCount" style="color:var(--muted)"></span></h2>
+      <div class="pad">
+        <div id="planNoData" style="font-size:13px;color:#475569">Load the Nyanza project data (Export tab) to pick customers from the design instead of typing.</div>
+        <div id="planUI" class="hidden">
+          <input id="planQ" placeholder="Search name (or leave empty for nearest)…" oninput="renderPlan()" autocomplete="off">
+          <div id="planList" style="margin-top:6px"></div>
+          <div id="planUsed" class="hidden" style="font-size:12.5px;margin-top:8px;color:#065f46;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:9px;padding:7px 10px"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <h2>📷 House photo <span class="req">required</span></h2>
       <div class="pad">
@@ -223,22 +243,29 @@
     <div class="card">
       <h2>👤 Customer <span class="req">name required</span></h2>
       <div class="pad grid">
+        <div class="full" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn dark" style="flex:1" onclick="$('idPhotoIn').click()">🪪 Read ID card (photo)</button>
+          <button type="button" class="btn ghost" onclick="openScan('idNumber')">▥ ID barcode</button>
+          <input type="file" id="idPhotoIn" accept="image/*" capture="environment" class="hidden" onchange="onIdPhoto(this)">
+        </div>
         <label class="full"><span>Serial number</span><input id="f-serial" inputmode="numeric"></label>
         <label><span>First name <b>*</b></span><input id="f-firstName" autocapitalize="words"></label>
         <label><span>Last name <b>*</b></span><input id="f-lastName" autocapitalize="words"></label>
-        <label><span>ID number</span><div class="withscan"><input id="f-idNumber" inputmode="numeric" maxlength="16"><button type="button" class="scanbtn" onclick="openScan('idNumber')" title="Scan">▥</button></div></label>
-        <label><span>Phone number</span><input id="f-phone" type="tel" inputmode="tel"></label>
+        <label><span>ID number</span><div class="withscan"><input id="f-idNumber" inputmode="numeric" maxlength="16" oninput="this.value=this.value.replace(/\D/g,'')"><button type="button" class="scanbtn" onclick="openScan('idNumber')" title="Scan">▥</button></div></label>
+        <label><span>Phone number</span><input id="f-phone" type="tel" inputmode="tel" maxlength="13" placeholder="07XXXXXXXX" oninput="this.value=this.value.replace(/[^0-9+]/g,'')"></label>
       </div>
     </div>
 
     <div class="card">
       <h2>⚡ Connection</h2>
       <div class="pad grid">
-        <label><span>Meter number</span><div class="withscan"><input id="f-meter" inputmode="numeric"><button type="button" class="scanbtn" onclick="openScan('meter')" title="Scan barcode">▥</button></div></label>
+        <label><span>Meter number</span><div class="withscan"><input id="f-meter" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')"><button type="button" class="scanbtn" onclick="openScan('meter')" title="Scan barcode">▥</button></div></label>
         <label><span>UPI number</span><div class="withscan"><input id="f-upi"><button type="button" class="scanbtn" onclick="openScan('upi')" title="Scan">▥</button></div></label>
         <label><span>SC length (m)</span><input id="f-scLength" inputmode="decimal"></label>
         <label><span>Category</span><select id="f-category"><option value="">— select —</option><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Public Institution</option><option>Agriculture</option><option>Other</option></select></label>
-        <label><span>Transformer name</span><input id="f-transformer"></label>
+        <label class="full"><span>Transformer</span>
+          <select id="txSel" class="hidden" onchange="onTxSel()"></select>
+          <input id="f-transformer" placeholder="Transformer name"></label>
         <label><span>Phase</span><select id="f-phase"><option value="">— select —</option><option>1-Phase</option><option>3-Phase</option></select></label>
       </div>
     </div>
@@ -281,6 +308,16 @@
       </div>
     </div>
     <div class="card">
+      <h2>📂 Nyanza project data</h2>
+      <div class="pad exp">
+        <div style="font-size:13px;color:#475569">Transformer list and planned customers from the LV designs. Load the file <b>WKConnect_Nyanza_project_data.json</b> once on each phone (from WhatsApp, Drive or a USB copy). It stays on the phone and works offline.</div>
+        <div id="projInfo" style="font-size:13px;font-weight:600"></div>
+        <button class="btn pri" onclick="$('projIn').click()">⤒ Load project data file</button>
+        <input type="file" id="projIn" accept=".json,application/json" class="hidden" onchange="importProject(this)">
+        <button class="btn ghost" onclick="prepareOCR(true)">🪪 Prepare ID-card reader for offline use</button>
+      </div>
+    </div>
+    <div class="card">
       <h2>☁ Automatic sync (Google Drive)</h2>
       <div class="pad exp">
         <div style="font-size:13px;color:#475569">When the phone has network, every saved record and its house photo are sent to the project Google Sheet and Drive folder. Records stay on the phone as well.</div>
@@ -305,7 +342,7 @@
       <h2>⚙ App</h2>
       <div class="pad exp">
         <button class="btn ghost hidden" id="installBtn" onclick="doInstall()">⤓ Install on this phone</button>
-        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.1 · project: Nyanza</div>
+        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.2 · project: Nyanza</div>
       </div>
     </div>
   </section>
@@ -324,6 +361,17 @@
     <p>Enter your full name. It is recorded on every entry and in the report.</p>
     <input id="agentIn" placeholder="e.g. Jean Uwimana" autocapitalize="words" style="margin-bottom:14px">
     <button class="btn pri w100" onclick="saveAgent()">Continue</button>
+  </div>
+</div>
+
+<div class="modal hidden" id="idModal">
+  <div class="box">
+    <h3>ID card — check and confirm</h3>
+    <p id="idMsg">Correct anything that was read wrongly.</p>
+    <label><span>Last name</span><input id="idLast"></label>
+    <label style="margin-top:8px;display:block"><span>First name</span><input id="idFirst"></label>
+    <label style="margin-top:8px;display:block"><span>ID number (16 digits)</span><input id="idNum" inputmode="numeric" maxlength="16"></label>
+    <div class="row2"><button class="btn ghost" onclick="$('idModal').classList.add('hidden')">Cancel</button><button class="btn pri" onclick="applyId()">✓ Fill form</button></div>
   </div>
 </div>
 
@@ -370,7 +418,9 @@ function load(){ try{ return JSON.parse(localStorage.getItem(KEY))||[]; }catch(e
 function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(records)); }catch(e){ toast("Storage full — export and clear old records","err"); } $("count").textContent=records.length; if(typeof renderSync==="function") renderSync(); }
 let db=null;
 function idb(){ return new Promise((res,rej)=>{ if(db) return res(db); if(!("indexedDB" in window)) return rej(new Error("no IndexedDB"));
-  const r=indexedDB.open("wkc-photos",1); r.onupgradeneeded=()=>r.result.createObjectStore("photos"); r.onsuccess=()=>{db=r.result;res(db);}; r.onerror=()=>rej(r.error); }); }
+  const r=indexedDB.open("wkc-photos",2); r.onupgradeneeded=()=>{ const d=r.result; if(!d.objectStoreNames.contains("photos")) d.createObjectStore("photos"); if(!d.objectStoreNames.contains("project")) d.createObjectStore("project"); }; r.onsuccess=()=>{db=r.result;res(db);}; r.onerror=()=>rej(r.error); }); }
+async function kvPut(k,v){ const d=await idb(); return new Promise((res,rej)=>{ const t=d.transaction("project","readwrite"); t.objectStore("project").put(v,k); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
+async function kvGet(k){ try{ const d=await idb(); return await new Promise(res=>{ const q=d.transaction("project").objectStore("project").get(k); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); }); }catch(e){ return null; } }
 async function photoPut(id,blob){ const d=await idb(); return new Promise((res,rej)=>{ const t=d.transaction("photos","readwrite"); t.objectStore("photos").put(blob,id); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
 async function photoGet(id){ try{ const d=await idb(); return await new Promise((res)=>{ const q=d.transaction("photos").objectStore("photos").get(id); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); }); }catch(e){ return null; } }
 async function photoDel(id){ try{ const d=await idb(); d.transaction("photos","readwrite").objectStore("photos").delete(id); }catch(e){} }
@@ -383,7 +433,7 @@ let formPhoto = null;            // Blob (downscaled, unstamped)
 let agent = localStorage.getItem(AGENT_KEY) || "";
 
 function blank(){ const o={}; TEXT_FIELDS.forEach(k=>o[k]=""); o.district=DEFAULT_DISTRICT;
-  Object.assign(o,{x:"",y:"",lat:null,lng:null,accuracy:null,samples:0,gpsSource:"",manual:false}); return o; }
+  Object.assign(o,{x:"",y:"",lat:null,lng:null,accuracy:null,samples:0,gpsSource:"",manual:false,planId:null,planHouse:""}); return o; }
 function nextSerial(){ const n=records.map(r=>parseInt(String(r.serial).replace(/\D/g,""),10)).filter(x=>!isNaN(x)); return n.length?Math.max(...n)+1:1; }
 
 /* ---------- TM Rwanda projection (ITRF2005 / TM Rwanda; GRS80) ---------- */
@@ -426,7 +476,7 @@ function startWatch(){
     else setChip("wait","…","Searching satellites… go outside","GPS");
   },{ enableHighAccuracy:true, maximumAge:0, timeout:30000 });
 }
-let lastSat=null;
+let lastSat=null, lastPlanRender=0;
 function onFix(p){
   if(cap) capFix(p);
   const c0=p.coords, sat0=isSat(c0);
@@ -438,6 +488,7 @@ function onFix(p){
   setChip(live.sat?g:"poor", "±"+(c.accuracy<10?c.accuracy.toFixed(1):Math.round(c.accuracy))+" m",
     live.sat ? (g==="good"?"Satellite fix · good":g==="fair"?"Satellite fix · fair — wait or move to open sky":"Satellite fix · weak") : "Network position only — not usable, wait for satellites",
     live.sat?"🛰 SAT":"📶 NET", live.sat?"sat":"net");
+  if(PROJ && !form.x && Date.now()-lastPlanRender>5000){ lastPlanRender=Date.now(); renderPlan(); }
 }
 function setChip(cls,big,lbl,src,srcCls){
   const c=$("gpsChip"); c.className="gpschip "+(cls||"");
@@ -506,7 +557,7 @@ function finishCapture(manualStop){
     toast(c.rejNet?"Only network positions received — go outside, open sky, and retry":"No satellite fix — move to open sky and retry","err"); return; }
   const t=wgs84ToTM(e.lat,e.lng);
   Object.assign(form,{ x:t.e.toFixed(2), y:t.n.toFixed(2), lat:e.lat, lng:e.lng, accuracy:Number(e.prec.toFixed(1)), samples:e.n, gpsSource:"GNSS", manual:false });
-  renderPoint(); if(map) setActivePoint(e.lat,e.lng,e.prec,false);
+  renderPoint(); if(map) setActivePoint(e.lat,e.lng,e.prec,false); renderPlan(); suggestTx();
   toast("Position captured · ±"+e.prec.toFixed(1)+" m · "+e.n+" satellite fixes", grade(e.prec)==="poor"?"err":"ok");
 }
 function renderPoint(){
@@ -575,7 +626,7 @@ function photoName(r){
 function writeForm(){
   TEXT_FIELDS.forEach(k=>{ const el=$("f-"+k); if(el && el.tagName!=="SELECT") el.value=form[k]||""; });
   ["category","phase"].forEach(k=>$("f-"+k).value=form[k]||"");
-  syncCascade(); renderPoint();
+  syncCascade(); renderPoint(); buildTxSel(); renderPlan();
   $("saveBtn").textContent = editingId ? "💾 Update record" : "💾 Save & next";
 }
 function readForm(){ TEXT_FIELDS.forEach(k=>{ const el=$("f-"+k); if(el) form[k]=el.value.trim(); }); }
@@ -604,6 +655,7 @@ function cascade(level){
   form[level]=$("f-"+level).value;
   const order=["district","sector","cell","village"], i=order.indexOf(level);
   order.slice(i+1).forEach(k=>{ form[k]=""; fill(k); });
+  if(level==="sector"||level==="district") buildTxSel();
 }
 
 /* ---------- save / edit / delete ---------- */
@@ -619,6 +671,13 @@ async function saveRecord(){
   if(cap){ toast("Position capture still running — tap “Use now” or wait","err"); return; }
   if(form.accuracy!=null && form.accuracy>10 && !confirm("Position precision is ±"+form.accuracy+" m (weak). Save anyway?")) return;
   if(form.meter){ const dup=records.find(r=>r.meter===form.meter && r._id!==editingId); if(dup && !confirm("Meter "+form.meter+" already exists on record #"+dup.serial+". Save anyway?")) return; }
+  form.phone=normPhone(form.phone);
+  const warn=[];
+  if(form.idNumber && !/^[123](19|20)\d{2}[78]\d{10}$/.test(form.idNumber)) warn.push("ID number is not a valid 16-digit Rwandan ID");
+  if(form.phone && !/^07[2389]\d{7}$/.test(form.phone)) warn.push("Phone number is not a valid Rwandan mobile (07X XXX XXXX)");
+  if(form.meter && form.meter.length<8) warn.push("Meter number looks too short");
+  if(form.idNumber){ const d2=records.find(r=>r.idNumber===form.idNumber && r._id!==editingId); if(d2) warn.push("ID number already used on record #"+d2.serial); }
+  if(warn.length && !confirm("Please check:\n• "+warn.join("\n• ")+"\n\nSave anyway?")) return;
   const now=new Date().toISOString();
   if(editingId){
     const old=records.find(r=>r._id===editingId);
@@ -633,7 +692,7 @@ async function saveRecord(){
     records.push(rec); persist();
     const keep={}; STICKY.forEach(k=>keep[k]=form[k]);
     form=Object.assign(blank(),keep); form.serial=String(nextSerial()); formPhoto=null; showPhoto(null);
-    if(map) clearActive(); writeForm(); drawMarkers(); window.scrollTo(0,0);
+    if(map) clearActive(); writeForm(); drawMarkers(); drawPlanned(); window.scrollTo(0,0);
     toast("Record #"+rec.serial+" saved","ok"); syncSoon();
   }
 }
@@ -687,7 +746,7 @@ function setView(v){
   ["form","list","exp"].forEach(k=>{ $("v-"+k).classList.toggle("hidden",k!==v); $("tab-"+k).classList.toggle("on",k===v); });
   $("savebar").classList.toggle("hidden",v!=="form");
   if(v==="list") renderList();
-  if(v==="exp"){ storageInfo(); $("syncUrlIn").value=syncUrl(); renderSync(); }
+  if(v==="exp"){ storageInfo(); projInfo(); $("syncUrlIn").value=syncUrl(); renderSync(); }
   if(v==="form"){ initMap(); setTimeout(()=>map&&map.invalidateSize(),60); }
   window.scrollTo(0,0);
 }
@@ -733,7 +792,7 @@ async function buildXLSX(){
   return await wb.xlsx.writeBuffer();
 }
 function buildCSV(){
-  const H=[["serial","Serial"],["firstName","First Name"],["lastName","Last Name"],["idNumber","ID Number"],["phone","Phone"],["meter","Meter Number"],["upi","UPI"],["scLength","SC Length (m)"],["category","Category"],["transformer","Transformer"],["phase","Phase"],["district","District"],["sector","Sector"],["cell","Cell"],["village","Village"],["comment","Comment"],["x","X Easting (TM Rwanda)"],["y","Y Northing (TM Rwanda)"],["lat","Latitude (WGS84)"],["lng","Longitude (WGS84)"],["accuracy","GPS Precision (m)"],["samples","GPS Fixes"],["gpsSource","Point Source"],["agent","Agent"],["photoFile","Photo"],["createdAt","Created"],["updatedAt","Updated"]];
+  const H=[["serial","Serial"],["firstName","First Name"],["lastName","Last Name"],["idNumber","ID Number"],["phone","Phone"],["meter","Meter Number"],["upi","UPI"],["scLength","SC Length (m)"],["category","Category"],["transformer","Transformer"],["phase","Phase"],["district","District"],["sector","Sector"],["cell","Cell"],["village","Village"],["comment","Comment"],["x","X Easting (TM Rwanda)"],["y","Y Northing (TM Rwanda)"],["lat","Latitude (WGS84)"],["lng","Longitude (WGS84)"],["accuracy","GPS Precision (m)"],["samples","GPS Fixes"],["gpsSource","Point Source"],["agent","Agent"],["photoFile","Photo"],["planId","Design customer ID"],["planHouse","Design house no"],["createdAt","Created"],["updatedAt","Updated"]];
   const e=v=>{ const s=String(v==null?"":v); return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
   const rows=sorted().map(r=>{ const ll=recLatLng(r)||[]; const o=Object.assign({},r,{lat:ll[0]!=null?ll[0].toFixed(7):"",lng:ll[1]!=null?ll[1].toFixed(7):"",gpsSource:r.manual?"Manual":(r.gpsSource||(r.accuracy!=null?"GPS":"")),photoFile:r.photo?"photos/"+photoName(r):""}); return H.map(h=>e(o[h[0]])).join(","); });
   return "﻿"+[H.map(h=>h[1]).join(",")].concat(rows).join("\r\n");
@@ -878,7 +937,9 @@ async function openScan(field){
 }
 function scanDone(raw){
   let v=String(raw||"").trim(); const f=scanField; closeScan(); if(!v||!f) return;
-  if(f==="meter"||f==="idNumber"){ const digits=v.replace(/\D/g,""); if(digits.length>=6) v=digits; }
+  if(f==="idNumber"){ const r=parseIdText(v.replace(/[^\w\s]/g," ")); if(r.id) v=r.id; else { const digits=v.replace(/\D/g,""); if(digits.length>=6) v=digits; }
+    if(r.lastName && !form.lastName){ form.lastName=r.lastName; $("f-lastName").value=r.lastName; } if(r.firstName && !form.firstName){ form.firstName=r.firstName; $("f-firstName").value=r.firstName; } }
+  if(f==="meter"){ const digits=v.replace(/\D/g,""); if(digits.length>=6) v=digits; }
   const el=$("f-"+f); el.value=v; form[f]=v;
   if(navigator.vibrate) navigator.vibrate(80);
   toast("Scanned: "+v,"ok");
@@ -888,6 +949,188 @@ function closeScan(){
   if(zxReader){ try{ zxReader.reset(); }catch(e){} zxReader=null; }
   if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
   const v=$("scanVideo"); v.srcObject=null; $("scanModal").classList.add("hidden"); scanField=null;
+}
+
+
+/* =====================================================================
+   PROJECT DATA — transformers + planned customers (LV designs)
+   Loaded from a private file on each phone (not published on GitHub).
+   ===================================================================== */
+let PROJ=null, GRID=null; const CELL=200;
+function indexProject(d){
+  PROJ={ tx:d.transformers||[], cust:d.customers||[], built:d.built||"", loadedAt:d.loadedAt||"" };
+  GRID=new Map();
+  PROJ.cust.forEach(c=>{ const k=Math.floor(c.e/CELL)+":"+Math.floor(c.y/CELL); let a=GRID.get(k); if(!a){a=[];GRID.set(k,a);} a.push(c); });
+}
+async function loadProject(){ const d=await kvGet("nyanza"); if(d){ indexProject(d); } projInfo(); buildTxSel(); renderPlan(); drawPlanned(); }
+function projInfo(){
+  const el=$("projInfo"); if(el) el.textContent = PROJ ? ("✓ "+PROJ.tx.length+" transformers · "+PROJ.cust.length.toLocaleString()+" planned customers"+(PROJ.built?" · data of "+PROJ.built:"")) : "No project data on this phone yet.";
+  $("planNoData").classList.toggle("hidden",!!PROJ); $("planUI").classList.toggle("hidden",!PROJ);
+}
+async function importProject(inp){
+  const f=inp.files&&inp.files[0]; inp.value=""; if(!f) return;
+  try{
+    const d=JSON.parse(await f.text());
+    if(!d || !Array.isArray(d.transformers) || !Array.isArray(d.customers)) throw new Error("not a WK Connect project data file");
+    d.loadedAt=new Date().toISOString(); await kvPut("nyanza",d); indexProject(d); projInfo(); buildTxSel(); renderPlan(); drawPlanned();
+    toast("Project data loaded: "+d.transformers.length+" transformers, "+d.customers.length+" customers","ok");
+  }catch(e){ toast("Could not load file: "+(e.message||e),"err"); }
+}
+/* ---- transformer select ---- */
+function buildTxSel(){
+  const sel=$("txSel"), inp=$("f-transformer"); if(!sel) return;
+  if(!PROJ||!PROJ.tx.length){ sel.classList.add("hidden"); inp.classList.remove("hidden"); return; }
+  const cur=form.transformer||"", sec=(form.sector||"").toLowerCase();
+  const list=PROJ.tx.filter(t=>!sec || (t.sector||"").toLowerCase()===sec);
+  const all = list.length ? list : PROJ.tx;
+  const known=PROJ.tx.some(t=>t.name===cur);
+  sel.innerHTML='<option value="">— select transformer'+(sec?" ("+esc(form.sector)+")":"")+' —</option>'
+    + all.map(t=>'<option'+(t.name===cur?' selected':'')+'>'+esc(t.name)+'</option>').join("")
+    + (cur && !all.some(t=>t.name===cur) && known ? '<option selected>'+esc(cur)+'</option>' : '')
+    + '<option value="__other"'+(cur&&!known?' selected':'')+'>Other (type the name)…</option>';
+  sel.classList.remove("hidden");
+  inp.classList.toggle("hidden", !(cur && !known) );
+  inp.value=cur;
+}
+function onTxSel(){
+  const v=$("txSel").value, inp=$("f-transformer");
+  if(v==="__other"){ inp.classList.remove("hidden"); inp.value=""; form.transformer=""; inp.focus(); return; }
+  inp.classList.add("hidden"); inp.value=v; form.transformer=v;
+}
+function txDistance(t,e,n){ return (t.e&&t.y)? Math.hypot(t.e-e,t.y-n) : Infinity; }
+function suggestTx(){
+  if(!PROJ||form.transformer) return;
+  const e=parseFloat(form.x), n=parseFloat(form.y); if(!isFinite(e)||!isFinite(n)) return;
+  const near=nearestPlanned(e,n,1,true)[0];
+  let name=near&&near.d<300?near.c.t:"", d=near?near.d:Infinity;
+  if(!name){ const t=PROJ.tx.map(t=>({t,d:txDistance(t,e,n)})).sort((a,b)=>a.d-b.d)[0]; if(t&&t.d<1500){ name=t.t.name; d=t.d; } }
+  if(name){ form.transformer=name; buildTxSel(); toast("Transformer set: "+name+" ("+Math.round(d)+" m) — change it if wrong","info"); }
+}
+/* ---- planned customers ---- */
+function usedPlanIds(){ const s=new Set(); records.forEach(r=>{ if(r.planId!=null && r._id!==editingId) s.add(r.planId); }); return s; }
+function nearestPlanned(e,n,k,includeUsed){
+  if(!GRID) return [];
+  const used=includeUsed?new Set():usedPlanIds(), out=[]; const cx=Math.floor(e/CELL), cy=Math.floor(n/CELL);
+  for(let r=1;r<=6 && out.length<k*3;r++){
+    out.length=0;
+    for(let i=cx-r;i<=cx+r;i++) for(let j=cy-r;j<=cy+r;j++){ const a=GRID.get(i+":"+j); if(a) a.forEach(c=>{ if(!used.has(c.i)) out.push({c,d:Math.hypot(c.e-e,c.y-n)}); }); }
+  }
+  return out.sort((a,b)=>a.d-b.d).slice(0,k);
+}
+function currentEN(){
+  let e=parseFloat(form.x), n=parseFloat(form.y);
+  if((!isFinite(e)||!isFinite(n)) && live && live.sat){ const t=wgs84ToTM(live.lat,live.lng); e=t.e; n=t.n; }
+  return (isFinite(e)&&isFinite(n))?[e,n]:null;
+}
+function renderPlan(){
+  if(!PROJ){ projInfo(); return; }
+  $("planCount").textContent="";
+  const used=usedPlanIds(), q=($("planQ").value||"").trim().toLowerCase(), list=$("planList");
+  const p=currentEN(); let rows=[];
+  if(q.length>=2){
+    const sec=(form.sector||"").toLowerCase(), tx=form.transformer;
+    rows=PROJ.cust.filter(c=>!used.has(c.i) && c.n.toLowerCase().includes(q) && (!tx||c.t===tx) && (!sec||(c.s||"").toLowerCase()===sec)).slice(0,30)
+      .map(c=>({c,d:p?Math.hypot(c.e-p[0],c.y-p[1]):null})).sort((a,b)=>(a.d??1e9)-(b.d??1e9)).slice(0,8);
+  } else if(p){ rows=nearestPlanned(p[0],p[1],5,false); }
+  if(form.planId!=null){ const c=PROJ.cust.find(x=>x.i===form.planId); $("planUsed").classList.remove("hidden"); $("planUsed").textContent="✓ Linked to design customer: "+(c?c.n+" ("+(c.h||"")+", "+c.t+")":"#"+form.planId); }
+  else $("planUsed").classList.add("hidden");
+  if(!rows.length){ list.innerHTML='<div style="font-size:12.5px;color:var(--muted);padding:6px 0">'+(q.length>=2?"No planned customer with that name.":p?"No planned customer within ~1 km.":"Capture the position (or type 2+ letters) to see planned customers.")+'</div>'; return; }
+  list.innerHTML=rows.map(r=>'<div class="plan"><div class="pn"><b>'+esc(r.c.n||"(no name)")+'</b><small>'+esc([r.c.h,r.c.v,r.c.t].filter(Boolean).join(" · "))+(r.c.p?" · "+esc(r.c.p):"")+'</small></div>'
+    +(r.d!=null?'<span class="dist">'+(r.d<1000?Math.round(r.d)+" m":(r.d/1000).toFixed(1)+" km")+'</span>':'')+'<button onclick="usePlanned('+r.c.i+')">Use</button></div>').join("");
+}
+function usePlanned(id){
+  const c=PROJ&&PROJ.cust.find(x=>x.i===id); if(!c) return; readForm();
+  const n=splitName(c.n);
+  if(!form.firstName&&!form.lastName){ form.firstName=n.first; form.lastName=n.last; }
+  else if(!confirm("Replace the name with “"+c.n+"”?")){} else { form.firstName=n.first; form.lastName=n.last; }
+  if(c.p) form.phase=c.p;
+  form.transformer=c.t;
+  if(c.s){ form.district=DEFAULT_DISTRICT; form.sector=c.s; }
+  if(c.c) form.cell=c.c; if(c.v) form.village=c.v;
+  if(!form.category) form.category=/comm|non/i.test(c.k||"")?"Commercial":"Residential";
+  form.planId=c.i; form.planHouse=c.h||"";
+  writeForm(); $("planQ").value=""; renderPlan();
+  toast("Filled from design: "+c.n,"ok");
+}
+function titleCase(s){ return String(s||"").toLowerCase().replace(/(^|[\s'-])([a-zà-ÿ])/g,(m,a,b)=>a+b.toUpperCase()).replace(/\b(De|Du|La|Le)\b/g,m=>m.toLowerCase()); }
+function splitName(full){
+  const w=String(full||"").replace(/[^A-Za-zÀ-ÿ' -]/g," ").replace(/\s+/g," ").trim().split(" ").filter(Boolean);
+  if(!w.length) return {first:"",last:""};
+  const up=w.filter(x=>x.length>1 && x===x.toUpperCase());
+  if(up.length && up.length<w.length) return { last:titleCase(up.join(" ")), first:titleCase(w.filter(x=>!up.includes(x)).join(" ")) };
+  return { last:titleCase(w[0]), first:titleCase(w.slice(1).join(" ")) };
+}
+function normPhone(p){ let v=String(p||"").replace(/[^0-9+]/g,""); if(v.startsWith("+250")) v="0"+v.slice(4); else if(v.startsWith("250")&&v.length===12) v="0"+v.slice(3); else if(/^7\d{8}$/.test(v)) v="0"+v; return v; }
+/* ---- planned customers on the map ---- */
+let planLayer=null, planRenderer=null;
+function drawPlanned(){
+  if(!map||!PROJ) return;
+  if(!planLayer){ planRenderer=L.canvas({padding:.2}); planLayer=L.layerGroup().addTo(map); map.on("moveend",drawPlanned); }
+  planLayer.clearLayers();
+  if(map.getZoom()<16) return;
+  const b=map.getBounds(), used=usedPlanIds(), sw=wgs84ToTM(b.getSouth(),b.getWest()), ne=wgs84ToTM(b.getNorth(),b.getEast());
+  let n=0;
+  for(const c of PROJ.cust){
+    if(c.e<sw.e||c.e>ne.e||c.y<sw.n||c.y>ne.n||used.has(c.i)) continue;
+    if(++n>1500) break;
+    const ll=tmToWgs84(c.e,c.y);
+    L.circleMarker([ll.lat,ll.lon],{renderer:planRenderer,radius:4,color:"#475569",weight:1,fillColor:"#e2e8f0",fillOpacity:.9})
+      .bindPopup('<b>'+esc(c.n||"(no name)")+'</b><br>'+esc([c.h,c.v,c.t].filter(Boolean).join(" · "))+'<br><button onclick="usePlanned('+c.i+');map.closePopup()" style="margin-top:6px;border:0;background:#0369a1;color:#fff;border-radius:7px;padding:6px 10px;font-weight:700">Use this customer</button>').addTo(planLayer);
+  }
+}
+
+/* =====================================================================
+   ID CARD READER — offline OCR (Tesseract) of the front of the card
+   ===================================================================== */
+let ocrWorker=null, ocrLoading=null;
+async function prepareOCR(manual){
+  if(ocrWorker) { if(manual) toast("ID reader ready (works offline)","ok"); return ocrWorker; }
+  if(ocrLoading) return ocrLoading;
+  ocrLoading=(async()=>{
+    if(typeof Tesseract==="undefined") await loadScript("ocr/tesseract.min.js");
+    const base=new URL("ocr/",location.href).href;
+    const w=await Tesseract.createWorker("eng",1,{ workerPath:base+"worker.min.js", corePath:base, langPath:base+"lang", gzip:true });
+    await w.setParameters({ tessedit_pageseg_mode:"3" });
+    ocrWorker=w; return w;
+  })();
+  try{ if(manual) toast("Downloading ID reader (~7 MB, once)…","info"); const w=await ocrLoading; if(manual) toast("ID reader ready — it now works offline","ok"); return w; }
+  catch(e){ ocrLoading=null; toast("ID reader could not load: "+(e.message||e)+(navigator.onLine?"":" — connect once to download it"),"err"); throw e; }
+}
+async function onIdPhoto(inp){
+  const f=inp.files&&inp.files[0]; inp.value=""; if(!f) return;
+  try{
+    toast("Reading ID card…","info");
+    const img=await downscale(f,1800,0.92);
+    const w=await prepareOCR(false);
+    const { data } = await w.recognize(img);
+    const r=parseIdText(data.text||"");
+    $("idLast").value=r.lastName||""; $("idFirst").value=r.firstName||""; $("idNum").value=r.id||"";
+    $("idMsg").textContent = (r.id||r.lastName) ? "Read from the card — correct anything wrong, then confirm." : "Could not read the card clearly. Retake the photo flat, in good light, or type the values.";
+    $("idModal").classList.remove("hidden");
+  }catch(e){ if(e) console.error(e); }
+}
+function applyId(){
+  const id=$("idNum").value.replace(/\D/g,""), ln=$("idLast").value.trim(), fn=$("idFirst").value.trim();
+  if(ln) { form.lastName=ln; $("f-lastName").value=ln; }
+  if(fn) { form.firstName=fn; $("f-firstName").value=fn; }
+  if(id) { form.idNumber=id; $("f-idNumber").value=id; }
+  $("idModal").classList.add("hidden"); toast("ID details filled","ok");
+}
+function parseIdText(text){
+  const lines=String(text||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean); const res={};
+  const digitish=l=>{ const d=(l.match(/[0-9OoIl|SB ]/g)||[]).length; return d/l.length>0.7; };
+  const fix=l=>l.replace(/[Oo]/g,"0").replace(/[Il|]/g,"1").replace(/S/g,"5").replace(/B/g,"8");
+  const cands=[];
+  lines.forEach((l,i)=>{ cands.push(l.replace(/\D/g,"")); if(digitish(l)) cands.push(fix(l).replace(/\D/g,"")); if(i+1<lines.length) cands.push((l+lines[i+1]).replace(/\D/g,"")); });
+  cands.push(String(text||"").replace(/\D/g,""));
+  for(const c of cands){ const m=c.match(/[123](?:19|20)\d{2}[78]\d{10}/); if(m){ res.id=m[0]; break; } }
+  const li=lines.findIndex(l=>/amazina|names?\b/i.test(l));
+  if(li>=0){
+    let cand=lines[li].replace(/.*names?\s*[:.]?/i,"").trim(); if(cand.length<3) cand=lines[li+1]||"";
+    cand=cand.replace(/[^A-Za-zÀ-ÿ' -]/g," ").replace(/\s+/g," ").trim();
+    if(cand.split(" ").length>=2 && !/date|birth|amavuko|igitsina|sex/i.test(cand)){ const n=splitName(cand); res.firstName=n.first; res.lastName=n.last; }
+  }
+  return res;
 }
 
 /* ---------- agent ---------- */
@@ -915,7 +1158,7 @@ function initMap(){
   L.control.layers({"Satellite":sat,"Streets":osm},null,{position:"topright"}).addTo(map);
   markerLayer=L.layerGroup().addTo(map);
   map.on("click",e=>{ if(tapMode) manualPoint(e.latlng.lat,e.latlng.lng); });
-  drawMarkers(); setTimeout(()=>{ map.invalidateSize(); fitPoints(); },80);
+  drawMarkers(); drawPlanned(); setTimeout(()=>{ map.invalidateSize(); fitPoints(); },80);
 }
 function drawMarkers(){
   if(!markerLayer) return; markerLayer.clearLayers();
@@ -944,7 +1187,7 @@ function manualPoint(lat,lng){
   if(cap) finishCapture(false);
   const t=wgs84ToTM(lat,lng);
   Object.assign(form,{lat,lng,x:t.e.toFixed(2),y:t.n.toFixed(2),manual:true,accuracy:null,samples:0,gpsSource:"Manual"});
-  setActivePoint(lat,lng,null,true,true); renderPoint();
+  setActivePoint(lat,lng,null,true,true); renderPoint(); renderPlan();
 }
 function toggleTap(){ tapMode=!tapMode; $("tapBtn").classList.toggle("on",tapMode); $("tapBtn").textContent=tapMode?"✋ Tap-to-set: ON":"✋ Tap-to-set"; toast(tapMode?"Tap the map to place the point":"Tap-to-set off","info"); }
 function fitPoints(){
@@ -986,7 +1229,7 @@ form.serial=String(nextSerial());
 persist(); writeForm(); updateNet(); setView("form");
 startWatch();
 if(!agent) askAgent(false);
-renderSync(); syncSoon(3000);
+renderSync(); syncSoon(3000); loadProject();
 </script>
 </body>
 </html>

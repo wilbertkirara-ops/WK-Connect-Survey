@@ -38,6 +38,20 @@ AUTOMATIC SYNC (Google Sheet + Drive)
 - Token in Code.gs must equal SYNC_TOKEN in index.html. The token is visible in
   the public app code: it only stops casual misuse, it is not real security.
 
+NYANZA PROJECT DATA (private, NOT in this repository)
+- File WKConnect_Nyanza_project_data.json (built from the LV design shapefiles and the
+  LV staking table): 141 transformers with TM coordinates + 16,785 planned customers.
+- Load it once per phone: Export > Nyanza project data > Load project data file.
+- Then: transformer = pick list (filtered by sector, auto-suggested from position);
+  "Planned customer" card lists the nearest design customers (or search by name);
+  "Use" fills name, phase, transformer, sector/cell/village, category, design house no.
+  Planned customers also show as grey dots on the map from zoom 16.
+
+ID CARD
+- "Read ID card (photo)": offline OCR (Tesseract, files in ocr/, ~7 MB downloaded once)
+  reads names and the 16-digit ID number from the front of the card; the agent confirms.
+- "ID barcode": reads the 2D barcode on the back when the phone can decode it.
+
 BARCODE / QR SCAN
 - ▥ buttons next to Meter, ID and UPI open the camera.
 - Android Chrome: native BarcodeDetector. iPhone: ZXing (zxing.min.js) fallback.
