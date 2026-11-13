@@ -11,6 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="WK Connect" />
+<meta name="author" content="Ir Wilbert KIRARA — Expert Surveyor in Electrical Power Lines" />
 <link rel="stylesheet" href="leaflet/leaflet.css" />
 <title>WK Connect Survey</title>
 <style>
@@ -143,6 +144,12 @@
   .plan .dist{font:700 12px ui-monospace,Menlo,monospace;color:#0369a1;white-space:nowrap}
   .plan button{border:0;background:var(--accent);color:#fff;border-radius:9px;padding:8px 12px;font-weight:700;font-size:13px}
   .chipbtn{border:1.5px solid #cbd5e1;background:#fff;border-radius:99px;padding:6px 11px;font-size:12.5px;font-weight:700;color:#334155}
+  .credit{max-width:780px;margin:0 auto;padding:4px 14px calc(96px + var(--safe-b));text-align:center;font-size:11.5px;color:#64748b}
+  .credit b{color:#334155}
+  .about{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fff;border-radius:12px;padding:14px}
+  .about .mono{width:46px;height:46px;border-radius:50%;background:#0ea5e9;display:grid;place-items:center;font-weight:800;font-size:17px;flex:0 0 auto;letter-spacing:.02em}
+  .about b{display:block;font-size:15px}
+  .about span{font-size:12.5px;color:#cbd5e1}
   .hidden{display:none!important}
   .leaflet-popup-content{font-size:13px;line-height:1.5}
 </style>
@@ -151,7 +158,7 @@
 
 <header>
   <div class="hrow">
-    <div class="brand">WK Connect Survey<small>NYANZA · AS-BUILT CUSTOMER CONNECTIONS</small></div>
+    <div class="brand">WK Connect Survey<small>NYANZA · AS-BUILT CUSTOMER CONNECTIONS</small><small style="color:#7dd3fc;letter-spacing:0">by Ir Wilbert KIRARA</small></div>
     <span style="margin-left:auto"></span>
     <button class="sync off" id="syncChip" onclick="syncNow(true)">☁ off</button>
     <button class="agent" id="agentChip" onclick="askAgent(true)">👤 —</button>
@@ -323,11 +330,13 @@
       <div class="pad exp">
         <button class="btn ghost hidden" id="installBtn" onclick="doInstall()">⤓ Install on this phone</button>
         <button class="btn ghost" onclick="prepareOCR(true)">🪪 Prepare ID-card reader for offline use</button>
-        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.4 · project: Nyanza</div>
+        <div class="about"><div class="mono">WK</div><div><b>Ir Wilbert KIRARA</b><span>Expert Surveyor in Electrical Power Lines<br>Creator of WK Connect Survey</span></div></div>
+        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.4 · project: Nyanza · © 2026 Ir Wilbert KIRARA</div>
       </div>
     </div>
   </section>
 </main>
+<div class="credit">WK Connect Survey · created by <b>Ir Wilbert KIRARA</b> · Expert Surveyor in Electrical Power Lines</div>
 
 <div class="savebar" id="savebar">
   <div class="in">
@@ -342,6 +351,7 @@
     <p>Enter your full name. It is recorded on every entry and in the report.</p>
     <input id="agentIn" placeholder="e.g. Jean Uwimana" autocapitalize="words" style="margin-bottom:14px">
     <button class="btn pri w100" onclick="saveAgent()">Continue</button>
+    <div style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:12px">WK Connect Survey — created by <b>Ir Wilbert KIRARA</b>,<br>Expert Surveyor in Electrical Power Lines</div>
   </div>
 </div>
 
