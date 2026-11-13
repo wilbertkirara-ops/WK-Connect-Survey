@@ -180,7 +180,10 @@ let accuracy = null, gpsState = "idle", watchId = null, best = Infinity;
 let gpsAcc = { n:0, sumW:0, sumWlat:0, sumWlng:0, best:Infinity, pts:[], t0:0 };
 function resetGps(){ gpsAcc={ n:0, sumW:0, sumWlat:0, sumWlng:0, best:Infinity, pts:[], t0:0 }; best=Infinity; accuracy=null; }
 
-function blank(){ const o={}; FIELDS.forEach(f=>o[f.k]=""); return o; }
+/* ---------- Project settings (Nyanza) ---------- */
+const DEFAULT_DISTRICT = "Nyanza";
+const PROJECT_TITLE = "PROJECT NAME: DESIGN, SUPPLY, AND INSTALLATION OF LOW VOLTAGE AND MEDIUM VOLTAGE LINES AND SERVICE CONNECTIONS IN NYANZA";
+function blank(){ const o={}; FIELDS.forEach(f=>o[f.k]=""); o.district=DEFAULT_DISTRICT; return o; }
 function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; } }
 function persist(){ localStorage.setItem(KEY, JSON.stringify(records)); document.getElementById("count").textContent = records.length; }
 function nextSerial(){ const n=records.map(r=>parseInt(String(r.serial).replace(/\D/g,""),10)).filter(x=>!isNaN(x)); return n.length?Math.max(...n)+1:1; }
@@ -496,8 +499,7 @@ async function exportXLSX(){
     // Fill header banner when a single value applies to the whole sheet.
     const uniq=k=>{ const s=new Set(records.map(r=>String(r[k]||"").trim()).filter(Boolean)); return s.size===1?[...s][0]:""; };
     const tx=uniq("transformer"); if(tx) ws.getCell("A3").value="TRANSFORMER NAME:   "+tx;
-    const dist=uniq("district");
-    if(dist){ const a1=String(ws.getCell("E1").value||""); ws.getCell("E1").value=a1.replace(/IN\s+\S+\s+DISTRICT\s*$/i,"IN "+dist.toUpperCase()+" DISTRICT"); }
+    ws.getCell("E1").value=PROJECT_TITLE;
     const sec=uniq("sector"); if(sec) ws.getCell("C2").value="REPORT ON INSTALLED PREPAID METER IN "+sec.toUpperCase()+" SECTOR";
     const out=await wb.xlsx.writeBuffer();
     const blob=new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
