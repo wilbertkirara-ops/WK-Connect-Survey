@@ -247,7 +247,7 @@
         </div>
         <label class="full"><span>Serial number</span><input id="f-serial" inputmode="numeric"></label>
         <label><span>First name <b>*</b></span><input id="f-firstName" autocapitalize="words"></label>
-        <label><span>Last name <b>*</b></span><input id="f-lastName" autocapitalize="words"></label>
+        <label><span>Last name <b>*</b></span><input id="f-lastName" autocapitalize="characters" oninput="upLast(this)"></label>
         <label><span>ID number</span><div class="withscan"><input id="f-idNumber" inputmode="numeric" maxlength="16" oninput="this.value=this.value.replace(/\D/g,'')"><button type="button" class="scanbtn" onclick="openScan('idNumber')" title="Scan">▥</button></div></label>
         <label><span>Phone number</span><input id="f-phone" type="tel" inputmode="tel" maxlength="13" placeholder="07XXXXXXXX" oninput="this.value=this.value.replace(/[^0-9+]/g,'')"></label>
       </div>
@@ -333,7 +333,7 @@
         <button class="btn ghost hidden" id="installBtn" onclick="doInstall()">⤓ Install on this phone</button>
         <button class="btn ghost" onclick="prepareOCR(true)">🪪 Prepare ID-card reader for offline use</button>
         <div class="about"><div class="mono">WK</div><div><b>Ir Wilbert KIRARA</b><span>Expert Surveyor in Electrical Power Lines<br>Creator of WK Connect Survey</span></div></div>
-        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.5 · project: Nyanza · © 2026 Ir Wilbert KIRARA</div>
+        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.6 · project: Nyanza · © 2026 Ir Wilbert KIRARA</div>
       </div>
     </div>
   </section>
@@ -361,7 +361,7 @@
   <div class="box">
     <h3>ID card — check and confirm</h3>
     <p id="idMsg">Correct anything that was read wrongly.</p>
-    <label><span>Last name</span><input id="idLast"></label>
+    <label><span>Last name</span><input id="idLast" autocapitalize="characters" oninput="upLast(this)"></label>
     <label style="margin-top:8px;display:block"><span>First name</span><input id="idFirst"></label>
     <label style="margin-top:8px;display:block"><span>ID number (16 digits)</span><input id="idNum" inputmode="numeric" maxlength="16"></label>
     <div class="row2"><button class="btn ghost" onclick="$('idModal').classList.add('hidden')">Cancel</button><button class="btn pri" onclick="applyId()">✓ Fill form</button></div>
@@ -422,7 +422,9 @@ async function photoGet(id){ try{ const d=await idb(); return await new Promise(
 async function photoDel(id){ try{ const d=await idb(); d.transaction("photos","readwrite").objectStore("photos").delete(id); }catch(e){} }
 
 /* ---------- state ---------- */
-let records = load();
+let records = upgradeNames(load());
+/* existing records: put last names in CAPITALS; bump updatedAt so the Sheet is corrected at next sync */
+function upgradeNames(list){ let n=0; const now=new Date().toISOString(); list.forEach(r=>{ if(r && r.lastName){ const u=String(r.lastName).replace(/\s+/g," ").trim().toLocaleUpperCase("en"); if(u!==r.lastName){ r.lastName=u; r.updatedAt=now; n++; } } }); if(n) try{ localStorage.setItem(KEY, JSON.stringify(list)); }catch(e){} return list; }
 let form = blank();
 let editingId = null;
 let formPhoto = null;            // Blob (downscaled, unstamped)
@@ -624,7 +626,10 @@ function writeForm(){
   syncCascade(); renderPoint(); buildTxSel(); checkDup(); if(!form.x) $("admNote").classList.add("hidden");
   $("saveBtn").textContent = editingId ? "💾 Update record" : "💾 Save & next";
 }
-function readForm(){ TEXT_FIELDS.forEach(k=>{ const el=$("f-"+k); if(el) form[k]=el.value.trim(); }); }
+function readForm(){ TEXT_FIELDS.forEach(k=>{ const el=$("f-"+k); if(el) form[k]=el.value.trim(); }); form.lastName=upName(form.lastName); }
+/* Last name always in CAPITALS (e.g. Marie Claire MUKAMANA) */
+function upName(s){ return String(s||"").replace(/\s+/g," ").trim().toLocaleUpperCase("en"); }
+function upLast(el){ const p=el.selectionStart, v=el.value.toLocaleUpperCase("en"); if(v!==el.value){ el.value=v; try{ el.setSelectionRange(p,p); }catch(e){} } }
 function clearForm(ask){
   if(ask && (formPhoto || form.x || $("f-firstName").value || $("f-lastName").value) && !confirm("Clear this entry?")) return;
   if(cap) finishCapture(false);
@@ -835,7 +840,7 @@ async function restorePackage(inp){
     for(const r of incoming){
       const pf=z.file("backup_photos/"+r._id+".jpg");
       if(pf){ await photoPut(r._id, new Blob([await pf.async("arraybuffer")],{type:"image/jpeg"})); ph++; }
-      if(!have.has(r._id)){ records.push(r); add++; }
+      if(!have.has(r._id)){ if(r.lastName) r.lastName=upName(r.lastName); records.push(r); add++; }
     }
     persist(); drawMarkers(); renderList(); storageInfo(); syncSoon();
     toast("Restored "+add+" new records, "+ph+" photos","ok");
@@ -1031,13 +1036,13 @@ async function onIdPhoto(inp){
     const w=await prepareOCR(false);
     const { data } = await w.recognize(img);
     const r=parseIdText(data.text||"");
-    $("idLast").value=r.lastName||""; $("idFirst").value=r.firstName||""; $("idNum").value=r.id||"";
+    $("idLast").value=upName(r.lastName); $("idFirst").value=r.firstName||""; $("idNum").value=r.id||"";
     $("idMsg").textContent = (r.id||r.lastName) ? "Read from the card — correct anything wrong, then confirm." : "Could not read the card clearly. Retake the photo flat, in good light, or type the values.";
     $("idModal").classList.remove("hidden");
   }catch(e){ if(e) console.error(e); }
 }
 function applyId(){
-  const id=$("idNum").value.replace(/\D/g,""), ln=$("idLast").value.trim(), fn=$("idFirst").value.trim();
+  const id=$("idNum").value.replace(/\D/g,""), ln=upName($("idLast").value), fn=$("idFirst").value.trim();
   if(ln) { form.lastName=ln; $("f-lastName").value=ln; }
   if(fn) { form.firstName=fn; $("f-firstName").value=fn; }
   if(id) { form.idNumber=id; $("f-idNumber").value=id; }
