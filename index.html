@@ -169,6 +169,9 @@ const SECTIONS = [
 const FIELDS = SECTIONS.flatMap(s=>s.fields);
 const STICKY = ["category","transformer","phase","district","sector","cell","village"];
 const KEY = "asbuilt-records-v1";
+/* ---------- Project settings (Nyanza) ---------- */
+const DEFAULT_DISTRICT = "Nyanza";
+const PROJECT_TITLE = "PROJECT NAME: DESIGN, SUPPLY, AND INSTALLATION OF LOW VOLTAGE AND MEDIUM VOLTAGE LINES AND SERVICE CONNECTIONS IN NYANZA";
 
 /* ---------- State ---------- */
 let records = load();
@@ -180,9 +183,6 @@ let accuracy = null, gpsState = "idle", watchId = null, best = Infinity;
 let gpsAcc = { n:0, sumW:0, sumWlat:0, sumWlng:0, best:Infinity, pts:[], t0:0 };
 function resetGps(){ gpsAcc={ n:0, sumW:0, sumWlat:0, sumWlng:0, best:Infinity, pts:[], t0:0 }; best=Infinity; accuracy=null; }
 
-/* ---------- Project settings (Nyanza) ---------- */
-const DEFAULT_DISTRICT = "Nyanza";
-const PROJECT_TITLE = "PROJECT NAME: DESIGN, SUPPLY, AND INSTALLATION OF LOW VOLTAGE AND MEDIUM VOLTAGE LINES AND SERVICE CONNECTIONS IN NYANZA";
 function blank(){ const o={}; FIELDS.forEach(f=>o[f.k]=""); o.district=DEFAULT_DISTRICT; return o; }
 function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; } }
 function persist(){ localStorage.setItem(KEY, JSON.stringify(records)); document.getElementById("count").textContent = records.length; }
