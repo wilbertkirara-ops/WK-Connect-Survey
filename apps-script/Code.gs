@@ -17,6 +17,8 @@
  */
 const TOKEN = 'wkcnyz-4HAs95vPKUfAI8hAiGrbJTzV';
 const SHEET_NAME = 'Records';
+// Google Sheet that receives the data (standalone script). Leave '' when the script is bound to the Sheet.
+const SHEET_ID = '1rY1TSEacDKRNh2u6URv6pfMNcF946HvTcUmDgMtvhLk';
 const ROOT_FOLDER = 'WK Connect Survey - Nyanza Photos';
 
 const COLS = [
@@ -50,7 +52,7 @@ function doPost(e) {
 }
 
 function sheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SHEET_ID ? SpreadsheetApp.openById(SHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
   let sh = ss.getSheetByName(SHEET_NAME);
   if (!sh) sh = ss.insertSheet(SHEET_NAME);
   if (sh.getLastRow() === 0) {
