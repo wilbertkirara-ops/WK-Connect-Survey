@@ -27,6 +27,21 @@ PHOTOS
 - On export each photo is stamped with serial, name, meter, X/Y, precision,
   location, date and agent, and named 0012_Lastname_Firstname.jpg.
 
+AUTOMATIC SYNC (Google Sheet + Drive)
+- Server: apps-script/Code.gs, deployed as a Google Apps Script web app bound to
+  a Google Sheet (setup steps at the top of that file).
+- Paste the /exec URL in the app: Export > Sync > Server settings > Test & save
+  (or set SYNC_URL_DEFAULT in index.html so every phone gets it automatically).
+- Each saved/edited record + stamped house photo is sent when the phone is online;
+  edits update the same Sheet row; deletions are marked DELETED (row kept).
+- Header chip: ☁ ✓ all synced · ☁ n waiting · ☁ ! error · ☁ off not configured.
+- Token in Code.gs must equal SYNC_TOKEN in index.html. The token is visible in
+  the public app code: it only stops casual misuse, it is not real security.
+
+BARCODE / QR SCAN
+- ▥ buttons next to Meter, ID and UPI open the camera.
+- Android Chrome: native BarcodeDetector. iPhone: ZXing (zxing.min.js) fallback.
+
 EXPORT (Export tab)
 - Full package (ZIP): RESERVE Excel (Nyanza template, EDCL + REAL/PATRONICS logos,
   photo hyperlinks), data.csv, photos/, backup.json + backup_photos/.

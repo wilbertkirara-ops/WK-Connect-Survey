@@ -27,7 +27,7 @@
   .hrow{max-width:780px;margin:0 auto;padding:10px 14px 6px;display:flex;align-items:center;gap:10px}
   .brand{font-weight:800;font-size:16px;letter-spacing:-.01em;line-height:1.1}
   .brand small{display:block;font-weight:500;font-size:11px;color:#94a3b8;letter-spacing:.02em}
-  .agent{margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:99px;padding:6px 11px;font-size:12.5px;font-weight:600;max-width:46%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .agent{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:99px;padding:6px 11px;font-size:12.5px;font-weight:600;max-width:46%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .gpsbar{max-width:780px;margin:0 auto;padding:0 14px 8px}
   .gpschip{display:flex;align-items:center;gap:10px;border-radius:12px;padding:8px 12px;background:#1e293b;border:1px solid #334155}
   .gpschip .dot{width:11px;height:11px;border-radius:50%;background:#64748b;flex:0 0 auto;box-shadow:0 0 0 4px rgba(100,116,139,.25)}
@@ -123,6 +123,18 @@
   .modal .box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
   .modal h3{margin:0 0 6px;font-size:18px}
   .modal p{margin:0 0 14px;color:var(--muted);font-size:13.5px}
+  .sync{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#e2e8f0;border-radius:99px;padding:6px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+  .sync.ok{background:#064e3b;border-color:#065f46;color:#a7f3d0}
+  .sync.pend{background:#78350f;border-color:#92400e;color:#fde68a}
+  .sync.err{background:#7f1d1d;border-color:#991b1b;color:#fecaca}
+  .sync.off{opacity:.7}
+  .agent{margin-left:0}
+  .withscan{display:flex;gap:6px}
+  .withscan input{flex:1;min-width:0}
+  .scanbtn{flex:0 0 auto;border:1.5px solid #cbd5e1;background:#fff;border-radius:10px;padding:0 11px;font-size:18px}
+  .scanbox{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:4/3;margin-bottom:12px}
+  .scanbox video{width:100%;height:100%;object-fit:cover;display:block}
+  .scanbox .frame{position:absolute;left:10%;right:10%;top:30%;bottom:30%;border:3px solid #22c55e;border-radius:10px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
   .hidden{display:none!important}
   .leaflet-popup-content{font-size:13px;line-height:1.5}
 </style>
@@ -132,6 +144,8 @@
 <header>
   <div class="hrow">
     <div class="brand">WK Connect Survey<small>NYANZA · AS-BUILT CUSTOMER CONNECTIONS</small></div>
+    <span style="margin-left:auto"></span>
+    <button class="sync off" id="syncChip" onclick="syncNow(true)">☁ off</button>
     <button class="agent" id="agentChip" onclick="askAgent(true)">👤 —</button>
   </div>
   <div class="gpsbar">
@@ -212,7 +226,7 @@
         <label class="full"><span>Serial number</span><input id="f-serial" inputmode="numeric"></label>
         <label><span>First name <b>*</b></span><input id="f-firstName" autocapitalize="words"></label>
         <label><span>Last name <b>*</b></span><input id="f-lastName" autocapitalize="words"></label>
-        <label><span>ID number</span><input id="f-idNumber" inputmode="numeric" maxlength="16"></label>
+        <label><span>ID number</span><div class="withscan"><input id="f-idNumber" inputmode="numeric" maxlength="16"><button type="button" class="scanbtn" onclick="openScan('idNumber')" title="Scan">▥</button></div></label>
         <label><span>Phone number</span><input id="f-phone" type="tel" inputmode="tel"></label>
       </div>
     </div>
@@ -220,8 +234,8 @@
     <div class="card">
       <h2>⚡ Connection</h2>
       <div class="pad grid">
-        <label><span>Meter number</span><input id="f-meter" inputmode="numeric"></label>
-        <label><span>UPI number</span><input id="f-upi"></label>
+        <label><span>Meter number</span><div class="withscan"><input id="f-meter" inputmode="numeric"><button type="button" class="scanbtn" onclick="openScan('meter')" title="Scan barcode">▥</button></div></label>
+        <label><span>UPI number</span><div class="withscan"><input id="f-upi"><button type="button" class="scanbtn" onclick="openScan('upi')" title="Scan">▥</button></div></label>
         <label><span>SC length (m)</span><input id="f-scLength" inputmode="decimal"></label>
         <label><span>Category</span><select id="f-category"><option value="">— select —</option><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Public Institution</option><option>Agriculture</option><option>Other</option></select></label>
         <label><span>Transformer name</span><input id="f-transformer"></label>
@@ -267,6 +281,18 @@
       </div>
     </div>
     <div class="card">
+      <h2>☁ Automatic sync (Google Drive)</h2>
+      <div class="pad exp">
+        <div style="font-size:13px;color:#475569">When the phone has network, every saved record and its house photo are sent to the project Google Sheet and Drive folder. Records stay on the phone as well.</div>
+        <div id="syncInfo" style="font-size:13px;font-weight:600"></div>
+        <button class="btn pri" onclick="syncNow(true)">⟳ Sync now</button>
+        <details><summary style="font-size:12.5px;color:var(--muted);cursor:pointer">Server settings (supervisor)</summary>
+          <label style="margin-top:10px;display:block"><span>Sync server URL (Apps Script /exec)</span><input id="syncUrlIn" placeholder="https://script.google.com/macros/s/…/exec"></label>
+          <button class="btn ghost w100" style="margin-top:10px" onclick="saveSyncUrl()">Test &amp; save</button>
+        </details>
+      </div>
+    </div>
+    <div class="card">
       <h2>🛟 Backup &amp; restore</h2>
       <div class="pad exp">
         <div style="font-size:13px;color:#475569">Records and photos are stored <b>only on this phone</b>. Export the full package every evening and keep it on a computer. To move data to a new phone, restore that ZIP.</div>
@@ -301,6 +327,15 @@
   </div>
 </div>
 
+<div class="modal hidden" id="scanModal">
+  <div class="box">
+    <h3 id="scanTitle">Scan</h3>
+    <div class="scanbox"><video id="scanVideo" playsinline muted></video><div class="frame"></div></div>
+    <p id="scanMsg" style="margin:0 0 12px">Hold the barcode / QR code inside the green frame.</p>
+    <button class="btn ghost w100" onclick="closeScan()">Cancel — type it instead</button>
+  </div>
+</div>
+
 <div id="toast" class="hidden"></div>
 
 <script src="leaflet/leaflet.js"></script>
@@ -317,6 +352,10 @@ const PROJECT_TITLE = "PROJECT NAME: DESIGN, SUPPLY, AND INSTALLATION OF LOW VOL
 const TEMPLATE = "nyanza-template.xlsx";
 const KEY = "asbuilt-records-v1";
 const AGENT_KEY = "wkc-agent";
+/* Sync server (Google Apps Script web app). URL can be set in Export > Sync. */
+const SYNC_URL_DEFAULT = "";
+const SYNC_TOKEN = "wkcnyz-4HAs95vPKUfAI8hAiGrbJTzV";
+const SYNC_URL_KEY = "wkc-sync-url", DEL_KEY = "wkc-sync-deletes";
 const TEXT_FIELDS = ["serial","firstName","lastName","idNumber","phone","meter","upi","scLength","category","transformer","phase","district","sector","cell","village","comment"];
 const STICKY = ["category","transformer","phase","district","sector","cell","village"];
 
@@ -328,7 +367,7 @@ const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&l
 
 /* ---------- storage ---------- */
 function load(){ try{ return JSON.parse(localStorage.getItem(KEY))||[]; }catch(e){ return []; } }
-function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(records)); }catch(e){ toast("Storage full — export and clear old records","err"); } $("count").textContent=records.length; }
+function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(records)); }catch(e){ toast("Storage full — export and clear old records","err"); } $("count").textContent=records.length; if(typeof renderSync==="function") renderSync(); }
 let db=null;
 function idb(){ return new Promise((res,rej)=>{ if(db) return res(db); if(!("indexedDB" in window)) return rej(new Error("no IndexedDB"));
   const r=indexedDB.open("wkc-photos",1); r.onupgradeneeded=()=>r.result.createObjectStore("photos"); r.onsuccess=()=>{db=r.result;res(db);}; r.onerror=()=>rej(r.error); }); }
@@ -585,7 +624,7 @@ async function saveRecord(){
     const old=records.find(r=>r._id===editingId);
     const rec=Object.assign({},old,form,{agent:old.agent||agent,editedBy:agent,updatedAt:now,_id:editingId,photo:true});
     try{ await photoPut(editingId,formPhoto); }catch(e){ toast("Photo could not be stored: "+e.message,"err"); return; }
-    records=records.map(r=>r._id===editingId?rec:r); persist(); toast("Record #"+rec.serial+" updated","ok");
+    records=records.map(r=>r._id===editingId?rec:r); persist(); toast("Record #"+rec.serial+" updated","ok"); syncSoon();
     clearForm(false); drawMarkers(); setView("list");
   } else {
     const id=Date.now()+"-"+Math.random().toString(36).slice(2,7);
@@ -595,7 +634,7 @@ async function saveRecord(){
     const keep={}; STICKY.forEach(k=>keep[k]=form[k]);
     form=Object.assign(blank(),keep); form.serial=String(nextSerial()); formPhoto=null; showPhoto(null);
     if(map) clearActive(); writeForm(); drawMarkers(); window.scrollTo(0,0);
-    toast("Record #"+rec.serial+" saved","ok");
+    toast("Record #"+rec.serial+" saved","ok"); syncSoon();
   }
 }
 async function editRecord(id){
@@ -610,6 +649,7 @@ async function removeRecord(id){
   const r=records.find(x=>x._id===id); if(!r) return;
   if(!confirm("Delete record #"+(r.serial||"—")+" "+[r.firstName,r.lastName].filter(Boolean).join(" ")+"?\nThis cannot be undone.")) return;
   records=records.filter(x=>x._id!==id); persist(); photoDel(id); renderList(); drawMarkers(); toast("Record deleted","info");
+  if(r.syncedAt){ const q=delQueue(); q.push(id); localStorage.setItem(DEL_KEY,JSON.stringify(q)); syncSoon(); }
 }
 
 /* ---------- list ---------- */
@@ -631,7 +671,7 @@ function renderList(){
     return '<div class="rec"><div class="th" data-id="'+r._id+'">🏠</div><div class="bd">'
       +'<div class="t"><span class="sn">#'+esc(r.serial||"—")+'</span>'+esc(name)+'</div>'
       +'<div class="m">'+tag+iss+(r.meter?'Meter '+esc(r.meter)+' · ':'')+esc(r.village||"")+'</div>'
-      +'<div class="m">'+esc(r.agent||"")+' · '+fmtDate(r.createdAt)+'</div></div>'
+      +'<div class="m">'+esc(r.agent||"")+' · '+fmtDate(r.createdAt)+(syncUrl()?(isSynced(r)?' · ☁ synced':' · ⏳ not synced'):'')+'</div></div>'
       +'<div class="ac"><button onclick="editRecord(\''+r._id+'\')">✎ Edit</button><button class="del" onclick="removeRecord(\''+r._id+'\')">🗑</button></div></div>';
   }).join("");
   document.querySelectorAll(".th[data-id]").forEach(async el=>{
@@ -647,7 +687,7 @@ function setView(v){
   ["form","list","exp"].forEach(k=>{ $("v-"+k).classList.toggle("hidden",k!==v); $("tab-"+k).classList.toggle("on",k===v); });
   $("savebar").classList.toggle("hidden",v!=="form");
   if(v==="list") renderList();
-  if(v==="exp") storageInfo();
+  if(v==="exp"){ storageInfo(); $("syncUrlIn").value=syncUrl(); renderSync(); }
   if(v==="form"){ initMap(); setTimeout(()=>map&&map.invalidateSize(),60); }
   window.scrollTo(0,0);
 }
@@ -741,9 +781,113 @@ async function restorePackage(inp){
       if(pf){ await photoPut(r._id, new Blob([await pf.async("arraybuffer")],{type:"image/jpeg"})); ph++; }
       if(!have.has(r._id)){ records.push(r); add++; }
     }
-    persist(); drawMarkers(); renderList(); storageInfo();
+    persist(); drawMarkers(); renderList(); storageInfo(); syncSoon();
     toast("Restored "+add+" new records, "+ph+" photos","ok");
   }catch(e){ toast("Restore failed: "+(e.message||e),"err"); }
+}
+
+
+/* =====================================================================
+   SYNC — Google Apps Script web app (Sheet + Drive)
+   ===================================================================== */
+let syncBusy=false, syncErr="", syncTimer=null, lastSyncOk=null;
+const syncUrl = () => (localStorage.getItem(SYNC_URL_KEY) || SYNC_URL_DEFAULT || "").trim();
+const isSynced = r => !!r.syncedAt && r.syncedAt === r.updatedAt;
+function delQueue(){ try{ return JSON.parse(localStorage.getItem(DEL_KEY))||[]; }catch(e){ return []; } }
+function pendingCount(){ return records.filter(r=>!isSynced(r)).length + delQueue().length; }
+function renderSync(){
+  const c=$("syncChip"); if(!c) return; const n=pendingCount();
+  if(!syncUrl()){ c.className="sync off"; c.textContent="☁ off"; }
+  else if(syncBusy){ c.className="sync pend"; c.textContent="☁ ⟳ "+n; }
+  else if(syncErr && n){ c.className="sync err"; c.textContent="☁ ! "+n; }
+  else if(n){ c.className="sync pend"; c.textContent="☁ "+n+" waiting"; }
+  else { c.className="sync ok"; c.textContent="☁ ✓"; }
+  const i=$("syncInfo"); if(i) i.textContent = !syncUrl() ? "Sync not configured yet." :
+    (n? n+" item(s) waiting"+(navigator.onLine?"":" — phone offline")+(syncErr?" · last error: "+syncErr:"") : "All records synced ✓")+(lastSyncOk?" · last sync "+fmtDate(lastSyncOk):"");
+}
+function syncSoon(ms){ clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(false), ms==null?1500:ms); renderSync(); }
+async function blobToB64(b){ const u=new Uint8Array(await b.arrayBuffer()); let s=""; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(s); }
+async function post(payload){
+  const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),60000);
+  try{
+    const res=await fetch(syncUrl(),{method:"POST",body:JSON.stringify(Object.assign({token:SYNC_TOKEN},payload)),signal:ctl.signal,redirect:"follow"});
+    const j=await res.json(); if(!j.ok) throw new Error(j.error||"server error"); return j;
+  } finally { clearTimeout(t); }
+}
+async function syncNow(manual){
+  if(!syncUrl()){ if(manual){ toast("Sync is not configured — see Export › Sync","err"); setView("exp"); } return; }
+  if(syncBusy) return;
+  if(!navigator.onLine){ if(manual) toast("No network — records will sync automatically later","err"); renderSync(); return; }
+  syncBusy=true; syncErr=""; renderSync(); let sent=0;
+  try{
+    for(const id of delQueue()){ await post({action:"delete",id}); localStorage.setItem(DEL_KEY,JSON.stringify(delQueue().filter(x=>x!==id))); }
+    for(const r of records.filter(x=>!isSynced(x))){
+      const ver=r.updatedAt||r.createdAt||new Date().toISOString(); if(!r.updatedAt) r.updatedAt=ver;
+      const blob=await photoGet(r._id);
+      const photo = blob ? await blobToB64(await stampPhoto(blob,r)) : "";
+      const clean=Object.assign({},r); delete clean.syncedAt; const ll=recLatLng(r); if(ll){ clean.lat=ll[0]; clean.lng=ll[1]; }
+      await post({action:"upsert",record:clean,photo,photoName:photoName(r)});
+      const cur=records.find(x=>x._id===r._id); if(cur && cur.updatedAt===ver){ cur.syncedAt=ver; persist(); }
+      sent++; renderSync();
+    }
+    lastSyncOk=new Date().toISOString();
+    if(manual || sent) toast(sent?"Synced "+sent+" record(s) to Google Drive":"Everything already synced","ok");
+  }catch(e){ syncErr=(e.name==="AbortError"?"timeout":(e.message||String(e))); if(manual) toast("Sync failed: "+syncErr,"err"); }
+  finally{ syncBusy=false; renderSync(); }
+}
+async function saveSyncUrl(){
+  const u=$("syncUrlIn").value.trim();
+  if(u && !/^https:\/\/script\.google(usercontent)?\.com\/.+\/exec$/.test(u)){ toast("URL must be the Apps Script web-app URL ending in /exec","err"); return; }
+  const old=localStorage.getItem(SYNC_URL_KEY);
+  if(!u){ localStorage.removeItem(SYNC_URL_KEY); renderSync(); toast("Sync URL cleared","info"); return; }
+  localStorage.setItem(SYNC_URL_KEY,u);
+  try{ await post({action:"ping"}); toast("Connected to sync server ✓","ok"); syncSoon(300); }
+  catch(e){ if(old) localStorage.setItem(SYNC_URL_KEY,old); else localStorage.removeItem(SYNC_URL_KEY); toast("Connection failed: "+(e.message||e),"err"); }
+  renderSync();
+}
+addEventListener("online",()=>syncSoon(2000));
+setInterval(()=>{ if(navigator.onLine && pendingCount() && !syncBusy) syncNow(false); }, 120000);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") syncSoon(1000); });
+
+/* =====================================================================
+   BARCODE / QR SCAN — native BarcodeDetector (Android Chrome),
+   ZXing fallback (iPhone) loaded on demand, works offline once cached.
+   ===================================================================== */
+let scanField=null, scanStream=null, scanLoop=null, zxReader=null;
+const SCAN_LABEL={meter:"Scan meter number",idNumber:"Scan ID card",upi:"Scan UPI (land title QR)"};
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=()=>rej(new Error("could not load "+src)); document.head.appendChild(s); }); }
+async function openScan(field){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ toast("Camera not available","err"); return; }
+  scanField=field; $("scanTitle").textContent=SCAN_LABEL[field]||"Scan"; $("scanMsg").textContent="Hold the barcode / QR code inside the green frame.";
+  $("scanModal").classList.remove("hidden");
+  const video=$("scanVideo");
+  try{
+    if("BarcodeDetector" in window){
+      const sup=await BarcodeDetector.getSupportedFormats();
+      const det=new BarcodeDetector({formats:sup});
+      scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false});
+      video.srcObject=scanStream; await video.play();
+      const tick=async()=>{ if(!scanStream) return; try{ const c=await det.detect(video); if(c&&c.length){ scanDone(c[0].rawValue); return; } }catch(e){} scanLoop=setTimeout(tick,180); };
+      tick();
+    } else {
+      if(typeof ZXing==="undefined") await loadScript("zxing.min.js");
+      zxReader=new ZXing.BrowserMultiFormatReader();
+      await zxReader.decodeFromConstraints({video:{facingMode:{ideal:"environment"}}},video,(res)=>{ if(res) scanDone(res.getText()); });
+    }
+  }catch(e){ closeScan(); toast(e.name==="NotAllowedError"?"Allow the camera for this app":"Scanner error: "+(e.message||e),"err"); }
+}
+function scanDone(raw){
+  let v=String(raw||"").trim(); const f=scanField; closeScan(); if(!v||!f) return;
+  if(f==="meter"||f==="idNumber"){ const digits=v.replace(/\D/g,""); if(digits.length>=6) v=digits; }
+  const el=$("f-"+f); el.value=v; form[f]=v;
+  if(navigator.vibrate) navigator.vibrate(80);
+  toast("Scanned: "+v,"ok");
+}
+function closeScan(){
+  clearTimeout(scanLoop); scanLoop=null;
+  if(zxReader){ try{ zxReader.reset(); }catch(e){} zxReader=null; }
+  if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
+  const v=$("scanVideo"); v.srcObject=null; $("scanModal").classList.add("hidden"); scanField=null;
 }
 
 /* ---------- agent ---------- */
@@ -842,6 +986,7 @@ form.serial=String(nextSerial());
 persist(); writeForm(); updateNet(); setView("form");
 startWatch();
 if(!agent) askAgent(false);
+renderSync(); syncSoon(3000);
 </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 // As-Built Collection service worker — offline app shell.
-const CACHE = "asbuilt-v8";
+const CACHE = "asbuilt-v9";
 const ASSETS = [
   "./",
   "./index.html",
@@ -13,6 +13,7 @@ const ASSETS = [
   "./exceljs.min.js",
   "./nyanza-template.xlsx",
   "./jszip.min.js",
+  "./zxing.min.js",
   "./leaflet/leaflet.js",
   "./leaflet/leaflet.css",
   "./leaflet/images/layers.png",
