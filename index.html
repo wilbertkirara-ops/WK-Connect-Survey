@@ -261,6 +261,7 @@
         <label><span>SC length (m)</span><input id="f-scLength" inputmode="decimal"></label>
         <label><span>Category</span><select id="f-category"><option value="">— select —</option><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Public Institution</option><option>Agriculture</option><option>Other</option></select></label>
         <label class="full"><span>Transformer</span>
+          <input id="txQ" class="hidden" placeholder="🔍 Search transformer (name or number)…" oninput="buildTxSel()" autocomplete="off" style="margin-bottom:6px">
           <select id="txSel" class="hidden" onchange="onTxSel()"></select>
           <input id="f-transformer" placeholder="Transformer name"></label>
         <label><span>Phase</span><select id="f-phase"><option value="">— select —</option><option>1-Phase</option><option>3-Phase</option></select></label>
@@ -332,7 +333,7 @@
         <button class="btn ghost hidden" id="installBtn" onclick="doInstall()">⤓ Install on this phone</button>
         <button class="btn ghost" onclick="prepareOCR(true)">🪪 Prepare ID-card reader for offline use</button>
         <div class="about"><div class="mono">WK</div><div><b>Ir Wilbert KIRARA</b><span>Expert Surveyor in Electrical Power Lines<br>Creator of WK Connect Survey</span></div></div>
-        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.4 · project: Nyanza · © 2026 Ir Wilbert KIRARA</div>
+        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.5 · project: Nyanza · © 2026 Ir Wilbert KIRARA</div>
       </div>
     </div>
   </section>
@@ -627,7 +628,7 @@ function readForm(){ TEXT_FIELDS.forEach(k=>{ const el=$("f-"+k); if(el) form[k]
 function clearForm(ask){
   if(ask && (formPhoto || form.x || $("f-firstName").value || $("f-lastName").value) && !confirm("Clear this entry?")) return;
   if(cap) finishCapture(false);
-  form=blank(); form.serial=String(nextSerial()); editingId=null; formPhoto=null; showPhoto(null);
+  form=blank(); form.serial=String(nextSerial()); editingId=null; formPhoto=null; showPhoto(null); $("txQ").value="";
   if(map) clearActive(); writeForm(); window.scrollTo(0,0);
 }
 
@@ -953,15 +954,22 @@ function closeScan(){
    ===================================================================== */
 const TXLIST = window.NYZ_TX || [];
 function buildTxSel(){
-  const sel=$("txSel"), inp=$("f-transformer"); if(!sel) return;
-  if(!TXLIST.length){ sel.classList.add("hidden"); inp.classList.remove("hidden"); return; }
+  const sel=$("txSel"), inp=$("f-transformer"), q=$("txQ"); if(!sel) return;
+  if(!TXLIST.length){ sel.classList.add("hidden"); q.classList.add("hidden"); inp.classList.remove("hidden"); return; }
+  q.classList.remove("hidden");
   const cur=form.transformer||"", sec=(form.sector||"").toLowerCase();
-  const list=TXLIST.filter(t=>!sec || (t.sector||"").toLowerCase()===sec), all=list.length?list:TXLIST;
+  const nq=x=>String(x||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+  const term=nq(q.value);
+  let list;
+  if(term){ const words=term.split(" "); list=TXLIST.filter(t=>{ const h=nq(t.name+" "+t.sector); return words.every(w=>h.includes(w)); }); }
+  else { list=TXLIST.filter(t=>!sec || (t.sector||"").toLowerCase()===sec); if(!list.length) list=TXLIST; }
   const known=TXLIST.some(t=>t.name===cur);
-  sel.innerHTML='<option value="">— select transformer'+(sec?" ("+esc(form.sector)+")":"")+' —</option>'
-    + all.map(t=>'<option'+(t.name===cur?' selected':'')+'>'+esc(t.name)+'</option>').join("")
-    + (cur && known && !all.some(t=>t.name===cur) ? '<option selected>'+esc(cur)+'</option>' : '')
+  const label = term ? (list.length+" found") : (sec ? form.sector : "all sectors");
+  sel.innerHTML='<option value="">— select transformer ('+esc(label)+') —</option>'
+    + list.map(t=>'<option value="'+esc(t.name)+'"'+(t.name===cur?' selected':'')+'>'+esc(t.name)+(term||!sec?"  · "+esc(t.sector):"")+'</option>').join("")
+    + (cur && known && !list.some(t=>t.name===cur) ? '<option value="'+esc(cur)+'" selected>'+esc(cur)+'</option>' : '')
     + '<option value="__other"'+(cur&&!known?' selected':'')+'>Other (type the name)…</option>';
+  if(term && list.length===1 && !cur){ sel.value=list[0].name; }
   sel.classList.remove("hidden");
   inp.classList.toggle("hidden", !(cur && !known));
   inp.value=cur;
@@ -969,7 +977,7 @@ function buildTxSel(){
 function onTxSel(){
   const v=$("txSel").value, inp=$("f-transformer");
   if(v==="__other"){ inp.classList.remove("hidden"); inp.value=""; form.transformer=""; inp.focus(); return; }
-  inp.classList.add("hidden"); inp.value=v; form.transformer=v;
+  inp.classList.add("hidden"); inp.value=v; form.transformer=v; if(v) $("txQ").value="";
 }
 function suggestTx(){
   if(form.transformer || !TXLIST.length) return;
@@ -1068,12 +1076,49 @@ function locateAdmin(e,n){
   for(const f of VILL){ const b=f.bb; if(e<b[0]||e>b[2]||n<b[1]||n>b[3]) continue; const r=vRings(f); if(inRings(r,e,n)) return {f,edge:edgeDist(r,e,n)}; }
   return null;
 }
+
+/* ---- village boundaries + names on the map ---- */
+let villLayer=null, villRenderer=null, activeVill=null;
+function villLatLngs(f){
+  if(!f.ll) f.ll=vRings(f).map(r=>r.map(p=>{ const g=tmToWgs84(p[0],p[1]); return [g.lat,g.lon]; }));
+  return f.ll;
+}
+function villLabelPt(f){
+  if(f.lp) return f.lp;
+  // centroid of the largest ring; fall back to bbox centre
+  let best=null, bestA=0;
+  for(const r of vRings(f)){ let a=0,cx=0,cy=0; for(let i=0,j=r.length-1;i<r.length;j=i++){ const k=r[j][0]*r[i][1]-r[i][0]*r[j][1]; a+=k; cx+=(r[j][0]+r[i][0])*k; cy+=(r[j][1]+r[i][1])*k; } if(Math.abs(a)>bestA){ bestA=Math.abs(a); best=[cx/(3*a),cy/(3*a),r]; } }
+  let e=(f.bb[0]+f.bb[2])/2, n=(f.bb[1]+f.bb[3])/2;
+  if(best && inRings([best[2]],best[0],best[1])){ e=best[0]; n=best[1]; }
+  const g=tmToWgs84(e,n); f.lp=[g.lat,g.lon]; return f.lp;
+}
+function drawVillages(){
+  if(!map||!villLayer) return;
+  villLayer.clearLayers();
+  if(!map.hasLayer(villLayer) || !VILL.length) return;
+  const z=map.getZoom(); if(z<12) return;
+  if(!villRenderer) villRenderer=L.canvas({padding:.3});
+  const b=map.getBounds().pad(.2), sw=wgs84ToTM(b.getSouth(),b.getWest()), ne=wgs84ToTM(b.getNorth(),b.getEast());
+  const sat=!!(map._layers && Object.values(map._layers).some(l=>l._url&&/arcgisonline/.test(l._url)));
+  const lineCol = sat ? "#fde047" : "#7c3aed", txtCol = sat ? "#fff" : "#4c1d95", halo = sat ? "0 0 3px #000,0 0 2px #000" : "0 0 3px #fff,0 0 2px #fff";
+  for(const f of VILL){
+    const bb=f.bb; if(bb[2]<sw.e||bb[0]>ne.e||bb[3]<sw.n||bb[1]>ne.n) continue;
+    const act = activeVill===f;
+    L.polygon(villLatLngs(f),{renderer:villRenderer,interactive:false,color:act?"#22c55e":lineCol,weight:act?3:1.2,opacity:.9,fill:act,fillColor:"#22c55e",fillOpacity:.08}).addTo(villLayer);
+    if(z>=14){
+      const fs = z>=16?13:11.5;
+      L.marker(villLabelPt(f),{interactive:false,keyboard:false,icon:L.divIcon({className:"",iconSize:[0,0],
+        html:'<div style="transform:translate(-50%,-50%);white-space:nowrap;font:700 '+fs+'px sans-serif;color:'+txtCol+';text-shadow:'+halo+';text-align:center;line-height:1.1">'+esc(f.v)+(z>=15?'<div style="font-weight:600;font-size:'+(fs-2)+'px;opacity:.85">'+esc(f.c)+' · '+esc(f.s)+'</div>':'')+'</div>'})}).addTo(villLayer);
+    }
+  }
+}
+
 function autoAdmin(){
   const note=$("admNote"); const e=parseFloat(form.x), n=parseFloat(form.y);
   if(!VILL.length || !isFinite(e) || !isFinite(n)) { note.classList.add("hidden"); return; }
   const hit=locateAdmin(e,n);
-  if(!hit){ note.className="full"; note.style.cssText="font-size:12.5px;border-radius:9px;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b"; note.textContent="⚠ This point is outside the Nyanza village map — choose the location manually."; return; }
-  const f=hit.f; const changed = form.district!==f.d || form.sector!==f.s || form.cell!==f.c || form.village!==f.v;
+  if(!hit){ activeVill=null; drawVillages(); note.className="full"; note.style.cssText="font-size:12.5px;border-radius:9px;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b"; note.textContent="⚠ This point is outside the Nyanza village map — choose the location manually."; return; }
+  const f=hit.f; activeVill=f; drawVillages(); const changed = form.district!==f.d || form.sector!==f.s || form.cell!==f.c || form.village!==f.v;
   Object.assign(form,{district:f.d,sector:f.s,cell:f.c,village:f.v}); syncCascade(); buildTxSel();
   const near=hit.edge<25;
   note.className="full"; note.style.cssText="font-size:12.5px;border-radius:9px;padding:7px 10px;"+(near?"background:#fffbeb;border:1px solid #fde68a;color:#92400e":"background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46");
@@ -1103,10 +1148,12 @@ function initMap(){
   const sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagery © Esri"});
   const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"});
   map=L.map("map",{center:RW_CENTER,zoom:11,layers:[sat]});
-  L.control.layers({"Satellite":sat,"Streets":osm},null,{position:"topright"}).addTo(map);
+  villLayer=L.layerGroup().addTo(map);
+  L.control.layers({"Satellite":sat,"Streets":osm},{"Village boundaries & names":villLayer},{position:"topright"}).addTo(map);
+  map.on("moveend zoomend",drawVillages); map.on("overlayadd overlayremove",drawVillages);
   markerLayer=L.layerGroup().addTo(map);
   map.on("click",e=>{ if(tapMode) manualPoint(e.latlng.lat,e.latlng.lng); });
-  drawMarkers(); setTimeout(()=>{ map.invalidateSize(); fitPoints(); },80);
+  drawMarkers(); drawVillages(); setTimeout(()=>{ map.invalidateSize(); fitPoints(); },80);
 }
 function drawMarkers(){
   if(!markerLayer) return; markerLayer.clearLayers();
