@@ -43,6 +43,14 @@ NYANZA TRANSFORMERS
   the LV design shapefiles. Transformer field = pick list filtered by sector; after a
   position capture the nearest transformer (< 1.5 km) is proposed.
 
+AUTOMATIC ADMINISTRATIVE LOCATION
+- nyanza-villages.js: official NISR village boundaries (TM Rwanda, 2012 census mapping),
+  Nyanza district + 2 km around (1,018 villages, simplified to ~4 m).
+  Source: NISR boundaries as published by Rwanda MoH NHIC (huggingface.co/datasets/nhic/rwanda-spatial).
+- After a position capture, a map tap or typed X/Y, District/Sector/Cell/Village are set
+  automatically. Warning when the point is < 25 m from a village boundary or outside the map.
+- Check against 12,853 surveyed design customers: same village in 99.5 % of cases.
+
 DUPLICATE CHECK
 - A warning appears when the captured point is within 3 m of an existing record,
   and saving asks for confirmation.

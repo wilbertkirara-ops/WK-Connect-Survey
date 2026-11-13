@@ -262,6 +262,7 @@
     <div class="card">
       <h2>🗺 Administrative location <span class="req">village required</span></h2>
       <div class="pad grid">
+        <div class="full hidden" id="admNote" style="font-size:12.5px;border-radius:9px;padding:7px 10px"></div>
         <label><span>District</span><select id="f-district" onchange="cascade('district')"></select></label>
         <label><span>Sector</span><select id="f-sector" onchange="cascade('sector')"></select></label>
         <label><span>Cell</span><select id="f-cell" onchange="cascade('cell')"></select></label>
@@ -322,7 +323,7 @@
       <div class="pad exp">
         <button class="btn ghost hidden" id="installBtn" onclick="doInstall()">⤓ Install on this phone</button>
         <button class="btn ghost" onclick="prepareOCR(true)">🪪 Prepare ID-card reader for offline use</button>
-        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.3 · project: Nyanza</div>
+        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.4 · project: Nyanza</div>
       </div>
     </div>
   </section>
@@ -369,6 +370,7 @@
 <script src="leaflet/leaflet.js"></script>
 <script src="rw-admin.js"></script>
 <script src="nyanza-transformers.js"></script>
+<script src="nyanza-villages.js"></script>
 <script src="exceljs.min.js"></script>
 <script src="jszip.min.js"></script>
 <script>
@@ -537,7 +539,7 @@ function finishCapture(manualStop){
     toast(c.rejNet?"Only network positions received — go outside, open sky, and retry":"No satellite fix — move to open sky and retry","err"); return; }
   const t=wgs84ToTM(e.lat,e.lng);
   Object.assign(form,{ x:t.e.toFixed(2), y:t.n.toFixed(2), lat:e.lat, lng:e.lng, accuracy:Number(e.prec.toFixed(1)), samples:e.n, gpsSource:"GNSS", manual:false });
-  renderPoint(); if(map) setActivePoint(e.lat,e.lng,e.prec,false); checkDup(); suggestTx();
+  renderPoint(); if(map) setActivePoint(e.lat,e.lng,e.prec,false); checkDup(); autoAdmin(); suggestTx();
   toast("Position captured · ±"+e.prec.toFixed(1)+" m · "+e.n+" satellite fixes", grade(e.prec)==="poor"?"err":"ok");
 }
 function renderPoint(){
@@ -556,7 +558,7 @@ function typedXY(){
   const e=parseFloat(form.x), n=parseFloat(form.y);
   Object.assign(form,{manual:true,accuracy:null,samples:0,gpsSource:"Manual",lat:null,lng:null});
   if(isFinite(e)&&isFinite(n)&&e>300000&&e<700000&&n>4600000&&n<5000000){ const g=tmToWgs84(e,n); form.lat=g.lat; form.lng=g.lon; if(map) setActivePoint(g.lat,g.lon,null,true); }
-  renderPoint(); checkDup(); $("fx").value=form.x; $("fy").value=form.y;
+  renderPoint(); checkDup(); autoAdmin(); $("fx").value=form.x; $("fy").value=form.y;
 }
 
 /* ---------- photo ---------- */
@@ -606,7 +608,7 @@ function photoName(r){
 function writeForm(){
   TEXT_FIELDS.forEach(k=>{ const el=$("f-"+k); if(el && el.tagName!=="SELECT") el.value=form[k]||""; });
   ["category","phase"].forEach(k=>$("f-"+k).value=form[k]||"");
-  syncCascade(); renderPoint(); buildTxSel(); checkDup();
+  syncCascade(); renderPoint(); buildTxSel(); checkDup(); if(!form.x) $("admNote").classList.add("hidden");
   $("saveBtn").textContent = editingId ? "💾 Update record" : "💾 Save & next";
 }
 function readForm(){ TEXT_FIELDS.forEach(k=>{ const el=$("f-"+k); if(el) form[k]=el.value.trim(); }); }
@@ -1038,6 +1040,35 @@ function parseIdText(text){
   return res;
 }
 
+
+/* =====================================================================
+   AUTOMATIC ADMINISTRATIVE LOCATION from coordinates
+   Official NISR village boundaries (TM Rwanda), Nyanza + 2 km around.
+   ===================================================================== */
+const VILL=(window.NYZ_VILLAGES||[]).map(v=>({d:v[0],s:v[1],c:v[2],v:v[3],bb:v[4],enc:v[5],rings:null}));
+function vRings(f){
+  if(!f.rings) f.rings=f.enc.map(e=>{ const pts=[]; let x=e[0],y=e[1]; pts.push([x,y]); for(let i=2;i<e.length;i+=2){ x+=e[i]; y+=e[i+1]; pts.push([x,y]); } return pts; });
+  return f.rings;
+}
+function inRings(rings,x,y){ let inside=false; for(const r of rings){ for(let i=0,j=r.length-1;i<r.length;j=i++){ const xi=r[i][0],yi=r[i][1],xj=r[j][0],yj=r[j][1]; if(((yi>y)!==(yj>y)) && (x<(xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside; } } return inside; }
+function edgeDist(rings,x,y){ let m=Infinity; for(const r of rings) for(let i=1;i<r.length;i++){ const ax=r[i-1][0],ay=r[i-1][1],bx=r[i][0],by=r[i][1],dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy; let t=l?((x-ax)*dx+(y-ay)*dy)/l:0; t=Math.max(0,Math.min(1,t)); m=Math.min(m,Math.hypot(x-(ax+t*dx),y-(ay+t*dy))); } return m; }
+function locateAdmin(e,n){
+  for(const f of VILL){ const b=f.bb; if(e<b[0]||e>b[2]||n<b[1]||n>b[3]) continue; const r=vRings(f); if(inRings(r,e,n)) return {f,edge:edgeDist(r,e,n)}; }
+  return null;
+}
+function autoAdmin(){
+  const note=$("admNote"); const e=parseFloat(form.x), n=parseFloat(form.y);
+  if(!VILL.length || !isFinite(e) || !isFinite(n)) { note.classList.add("hidden"); return; }
+  const hit=locateAdmin(e,n);
+  if(!hit){ note.className="full"; note.style.cssText="font-size:12.5px;border-radius:9px;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b"; note.textContent="⚠ This point is outside the Nyanza village map — choose the location manually."; return; }
+  const f=hit.f; const changed = form.district!==f.d || form.sector!==f.s || form.cell!==f.c || form.village!==f.v;
+  Object.assign(form,{district:f.d,sector:f.s,cell:f.c,village:f.v}); syncCascade(); buildTxSel();
+  const near=hit.edge<25;
+  note.className="full"; note.style.cssText="font-size:12.5px;border-radius:9px;padding:7px 10px;"+(near?"background:#fffbeb;border:1px solid #fde68a;color:#92400e":"background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46");
+  note.textContent=(near?"⚠ ":"✓ ")+"From coordinates: "+[f.d,f.s,f.c,f.v].join(" › ")+(near?" — only "+Math.round(hit.edge)+" m from the village boundary, please confirm.":"");
+  if(changed) toast("Location set: "+f.s+" › "+f.c+" › "+f.v,"info");
+}
+
 /* ---------- agent ---------- */
 function askAgent(force){ if(agent && !force) return; $("agentIn").value=agent; $("agentModal").classList.remove("hidden"); setTimeout(()=>$("agentIn").focus(),50); }
 function saveAgent(){
@@ -1092,7 +1123,7 @@ function manualPoint(lat,lng){
   if(cap) finishCapture(false);
   const t=wgs84ToTM(lat,lng);
   Object.assign(form,{lat,lng,x:t.e.toFixed(2),y:t.n.toFixed(2),manual:true,accuracy:null,samples:0,gpsSource:"Manual"});
-  setActivePoint(lat,lng,null,true,true); renderPoint(); checkDup();
+  setActivePoint(lat,lng,null,true,true); renderPoint(); checkDup(); autoAdmin();
 }
 function toggleTap(){ tapMode=!tapMode; $("tapBtn").classList.toggle("on",tapMode); $("tapBtn").textContent=tapMode?"✋ Tap-to-set: ON":"✋ Tap-to-set"; toast(tapMode?"Tap the map to place the point":"Tap-to-set off","info"); }
 function fitPoints(){
