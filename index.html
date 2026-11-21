@@ -406,7 +406,7 @@
         <button class="btn ghost hidden" id="installBtn" onclick="doInstall()">⤓ Install on this phone</button>
         <button class="btn ghost" onclick="prepareOCR(true)">🪪 Prepare ID-card reader for offline use</button>
         <div class="about"><div class="mono">WK</div><div><b>Ir Wilbert KIRARA</b><span>Expert Surveyor in Electrical Power Lines<br>Creator of WK Connect Survey</span></div></div>
-        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v3.1 · project: Nyanza · © 2026 Ir Wilbert KIRARA</div>
+        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v3.2 · project: Nyanza · © 2026 Ir Wilbert KIRARA</div>
       </div>
     </div>
   </section>
@@ -659,8 +659,8 @@ function finishCapture(manualStop){
 function renderPoint(){
   $("fx").value=form.x||""; $("fy").value=form.y||"";
   $("capBtn").textContent = (form.x&&form.y) ? "🛰 Re-capture position" : "🛰 Capture position";
-  if(form.manual){ setRing(null,100,"manual"); $("ring").style.setProperty("--c","#2563eb"); $("ringVal").textContent="MAN";
-    $("capState").textContent="Point placed by hand"; $("capXY").textContent="E "+(form.x||"—")+"  ·  N "+(form.y||"—"); $("capMeta").textContent="Drag the pin to fine-tune, or re-capture."; return; }
+  if(form.manual){ setRing(null,100,"map"); $("ring").style.setProperty("--c","#2563eb"); $("ringVal").textContent="✓";
+    $("capState").textContent="Position set on the map"; $("capXY").textContent="E "+(form.x||"—")+"  ·  N "+(form.y||"—"); $("capMeta").textContent="X / Y updated. Drag the pin to fine-tune, or re-capture."; return; }
   if(form.accuracy!=null){ const g=grade(form.accuracy);
     setRing(form.accuracy,100,form.samples+" sat. fixes");
     $("capState").textContent = g==="good"?"✓ Good position":g==="fair"?"Fair position — re-capture if possible":"Weak position — re-capture in open sky";
@@ -682,9 +682,9 @@ function renderPole(){
   $("pfx").value=form.poleX||""; $("pfy").value=form.poleY||"";
   $("pCapBtn").textContent = (form.poleX&&form.poleY) ? "🛰 Re-capture pole" : "🛰 Capture pole";
   const ui=CAPUI.pole;
-  if(form.poleX&&form.poleY&&form.poleManual){ setRing(null,100,"manual",ui); $("pRing").style.setProperty("--c","#2563eb"); $("pRingVal").textContent="MAN";
-    $("pCapState").textContent = form.poleSource&&/^Same/.test(form.poleSource) ? "Same pole as "+form.poleSource.replace(/^Same as /,"") : "Pole placed by hand";
-    $("pCapXY").textContent="E "+form.poleX+"  ·  N "+form.poleY; $("pCapMeta").textContent="Drag the pole marker to fine-tune, or re-capture."; return; }
+  if(form.poleX&&form.poleY&&form.poleManual){ setRing(null,100,"map",ui); $("pRing").style.setProperty("--c","#2563eb"); $("pRingVal").textContent="✓";
+    $("pCapState").textContent = form.poleSource&&/^Same/.test(form.poleSource) ? "Same pole as "+form.poleSource.replace(/^Same as /,"") : "Pole position set on the map";
+    $("pCapXY").textContent="E "+form.poleX+"  ·  N "+form.poleY; $("pCapMeta").textContent="X / Y updated. Drag the pole marker to fine-tune, or re-capture."; return; }
   if(form.poleX&&form.poleY&&form.poleAccuracy!=null){ const g=grade(form.poleAccuracy);
     setRing(form.poleAccuracy,100,(form.poleSamples||0)+" fixes",ui);
     $("pCapState").textContent = (form.poleSource&&/^Same/.test(form.poleSource)) ? "Same pole as "+form.poleSource.replace(/^Same as /,"") : g==="good"?"✓ Good pole position":g==="fair"?"Fair — re-capture if possible":"Weak — re-capture in open sky";
@@ -763,7 +763,7 @@ async function stampPhoto(blob,r){
   const name=[r.firstName,r.lastName].filter(Boolean).join(" ");
   const lines=[
     "#"+(r.serial||"")+"  "+name+(r.meter?"  ·  Meter "+r.meter:""),
-    "E "+(r.x||"—")+"  N "+(r.y||"—")+"  (TM Rwanda"+(r.accuracy!=null?", ±"+r.accuracy+" m":r.manual?", manual":"")+")",
+    "House E "+(r.x||"—")+"  N "+(r.y||"—")+"  (TM Rwanda)",
     [r.district,r.sector,r.cell,r.village].filter(Boolean).join(" / "),
     (r.poleX?"Pole E "+r.poleX+"  N "+r.poleY:"")+(r.scLength?(r.poleX?"  ·  ":"")+"SC "+r.scLength+" m":"")+(r.transformer?"  ·  "+r.transformer:""),
     fmtDate(r.createdAt)+"  ·  Agent: "+(r.agent||"")
@@ -899,7 +899,7 @@ function renderList(){
   $("list").innerHTML=shown.map(r=>{
     const name=[r.firstName,r.lastName].filter(Boolean).join(" ")||"Unnamed";
     const g=grade(r.accuracy);
-    const tag = r.manual?'<span class="tag man">manual</span>' : r.accuracy!=null?'<span class="tag '+g+'">±'+r.accuracy+' m</span>':'<span class="tag miss">no GPS</span>';
+    const tag = r.manual?'<span class="tag man">map</span>' : r.accuracy!=null?'<span class="tag '+g+'">±'+r.accuracy+' m</span>':'<span class="tag miss">no GPS</span>';
     const iss=issues(r).filter(x=>x!=="weak GPS").map(x=>'<span class="tag miss">'+x+'</span>').join("");
     return '<div class="rec"><div class="th" data-id="'+r._id+'">🏠</div><div class="bd">'
       +'<div class="t"><span class="sn">#'+esc(r.serial||"—")+'</span>'+esc(name)+'</div>'
@@ -980,7 +980,7 @@ async function buildXLSX(list, txName){
   const num=v=>{ const n=parseFloat(v); return isFinite(n)&&String(v).trim()!==""?n:(v||null); };
   list.slice().sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||""))||(parseInt(a.serial)||0)-(parseInt(b.serial)||0)).forEach((r,i)=>{
     const row=ws.getRow(START+i);
-    if(START+i>LASTFMT){ for(let c=1;c<=20;c++) row.getCell(c).style=clone(tmpl.getCell(c).style); row.height=tmpl.height; }
+    if(START+i>LASTFMT){ for(let c=1;c<=22;c++) row.getCell(c).style=clone(tmpl.getCell(c).style); row.height=tmpl.height; }
     const set=(c,v)=>{ row.getCell(c).value=(v===undefined||v===null||v==="")?null:v; };
     const resid=/resid/i.test(r.category||"");
     set(1,i+1); set(2,r.firstName); set(3,r.lastName); set(4,r.idNumber); set(5,r.phone);
@@ -988,7 +988,7 @@ async function buildXLSX(list, txName){
     set(11,r.transformer); set(12,r.phase); set(13,r.sector); set(14,r.cell); set(15,r.village); set(16,r.comment);
     set(17,r.agent);
     if(r.photo){ const pn=photoName(r), pc=row.getCell(18); pc.style=clone(pc.style); pc.value={ text:pn, hyperlink:"photos/"+pn }; pc.font=Object.assign(clone(pc.font||{}),{color:{argb:"FF0563C1"},underline:true}); }
-    set(19,num(r.x)); set(20,num(r.y)); row.getCell(19).numFmt="0.00"; row.getCell(20).numFmt="0.00";
+    set(19,num(r.x)); set(20,num(r.y)); set(21,num(r.poleX)); set(22,num(r.poleY)); [19,20,21,22].forEach(c=>row.getCell(c).numFmt="0.00");
     row.commit&&row.commit();
   });
   return await wb.xlsx.writeBuffer();
@@ -1498,15 +1498,21 @@ function mapFull(on){
 addEventListener("popstate",()=>{ if(fsOn){ fsOn=false; $("mapWrap").classList.remove("fs"); document.body.classList.remove("mapfs"); if(tapMode) toggleTap(false); setTimeout(()=>map&&map.invalidateSize(),80); } });
 function fsPlace(t){ toggleTap(t); fsPlaceUI(); renderFsInfo(); }
 function fsPlaceUI(){ $("fsHouse").classList.toggle("on",tapMode==="house"); $("fsPole").classList.toggle("on",tapMode==="pole"); }
+function fsCoords(hx,hy,px,py){
+  const f=v=>v!=null&&v!==""&&isFinite(parseFloat(v))?parseFloat(v).toFixed(2):"—";
+  return "<div style='font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;margin-top:4px'>🏠 X "+f(hx)+"  Y "+f(hy)+"<br>⚡ X "+f(px)+"  Y "+f(py)+"</div>";
+}
 function renderFsInfo(){
   const el=$("fsInfo"); if(!el) return; const hz=hzDist();
   const hint = tapMode==="house" ? "Tap the map exactly on the house." : tapMode==="pole" ? "Tap the map exactly on the pole." : "Drag 🏠 the house or ⚡ the pole, or tap Move house / Move pole then tap the map.";
-  el.innerHTML=(hz!=null ? "Hz distance <b>"+hz.toFixed(1)+" m</b> · SC <b>"+esc(form.scLength||autoSC(hz))+" m</b>"+(form.scManual?" (typed)":"") : "Place the house and the pole to get the distance.")+"<br><span style='color:#cbd5e1'>"+hint+"</span>";
+  el.innerHTML=(hz!=null ? "Hz distance <b>"+hz.toFixed(1)+" m</b> · SC <b>"+esc(form.scLength||autoSC(hz))+" m</b>"+(form.scManual?" (typed)":"") : "Place the house and the pole to get the distance.")
+    +fsCoords(form.x,form.y,form.poleX,form.poleY)+"<span style='color:#cbd5e1'>"+hint+"</span>";
 }
 function clearPole(){ if(poleMk){ map.removeLayer(poleMk); poleMk=null; } drawLink(); }
 function poleLatLng(r){ if(r.poleLat!=null&&r.poleLng!=null) return [r.poleLat,r.poleLng]; const e=parseFloat(r.poleX),n=parseFloat(r.poleY); if(!isFinite(e)||!isFinite(n)) return null; const p=tmToWgs84(e,n); return [p.lat,p.lon]; }
-function liveDrag(){ if(!fsOn||!active||!poleMk) return; const a=active.getLatLng(), b=poleMk.getLatLng(), p=wgs84ToTM(a.lat,a.lng), q=wgs84ToTM(b.lat,b.lng), hz=Math.hypot(p.e-q.e,p.n-q.n);
-  $("fsInfo").innerHTML="Hz distance <b>"+hz.toFixed(1)+" m</b> · SC <b>"+autoSC(hz)+" m</b><br><span style='color:#cbd5e1'>Release to place.</span>"; }
+function liveDrag(){ if(!fsOn) return;
+  if(!active||!poleMk){ const m=active||poleMk, t=wgs84ToTM(m.getLatLng().lat,m.getLatLng().lng); $("fsInfo").innerHTML=active?fsCoords(t.e,t.n,form.poleX,form.poleY):fsCoords(form.x,form.y,t.e,t.n); return; } const a=active.getLatLng(), b=poleMk.getLatLng(), p=wgs84ToTM(a.lat,a.lng), q=wgs84ToTM(b.lat,b.lng), hz=Math.hypot(p.e-q.e,p.n-q.n);
+  $("fsInfo").innerHTML="Hz distance <b>"+hz.toFixed(1)+" m</b> · SC <b>"+autoSC(hz)+" m</b>"+fsCoords(p.e,p.n,q.e,q.n)+"<span style='color:#cbd5e1'>Release to place.</span>"; }
 function drawLink(){
   if(!map) return;
   const a=active&&active.getLatLng(), b=poleMk&&poleMk.getLatLng();
