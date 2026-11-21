@@ -113,6 +113,10 @@ function upsert(r, photoB64, photoName) {
   rec.receivedAt = new Date();
   rec.status = 'OK';
   rec.scManual = rec.scManual ? 'yes' : '';
+  // numbers as numbers: a text like "18.8" would be turned into a date by the Sheet
+  ['scLength', 'poleDist', 'x', 'y', 'poleX', 'poleY', 'lat', 'lng', 'poleLat', 'poleLng', 'accuracy', 'poleAccuracy'].forEach(k => {
+    const v = rec[k]; if (v !== '' && v !== null && v !== undefined && isFinite(Number(v))) rec[k] = Number(v);
+  });
 
   const values = COLS.map(c => {
     const v = rec[c[0]];
@@ -213,7 +217,7 @@ function writeReserve_(folder, tx, list) {
   if (sh.getMaxRows() < need) sh.insertRowsAfter(sh.getMaxRows(), need - sh.getMaxRows());
 
   // column widths (same as the Excel template)
-  [7, 16, 16, 19, 13, 15, 18, 10, 11, 13, 16, 9, 13, 13, 14, 20, 16, 34, 13, 13]
+  [7, 16, 16, 19, 13, 15, 18, 10, 13, 13, 16, 9, 13, 13, 14, 20, 16, 34, 13, 13]
     .forEach((w, i) => sh.setColumnWidth(i + 1, Math.round(w * 7 + 5)));
   sh.setRowHeight(1, 82); sh.setRowHeight(2, 29); sh.setRowHeight(3, 29); sh.setRowHeight(4, 24); sh.setRowHeight(5, 40);
 
@@ -238,7 +242,8 @@ function writeReserve_(folder, tx, list) {
 
   // data
   const rows = list.slice().sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || (parseInt(a.serial, 10) || 0) - (parseInt(b.serial, 10) || 0));
-  const num = v => { const n = parseFloat(v); return isFinite(n) && String(v).trim() !== '' ? n : (v === null || v === undefined ? '' : v); };
+  // rows saved before v3 may hold "18.8" turned into a date (18 Aug) by the Sheet: read it back as 18.8
+  const num = v => { if (v instanceof Date) return parseFloat(v.getDate() + '.' + (v.getMonth() + 1)); const n = parseFloat(v); return isFinite(n) && String(v).trim() !== '' ? n : (v === null || v === undefined ? '' : v); };
   const data = rows.map((r, i) => {
     const resid = /resid/i.test(r.category || '');
     return [i + 1, r.firstName, r.lastName, String(r.idNumber || ''), String(r.phone || ''), String(r.meter || ''), String(r.upi || ''),
