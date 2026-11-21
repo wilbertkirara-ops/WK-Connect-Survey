@@ -70,6 +70,8 @@ function sheet_() {
     sh.getRange(1, 1, 1, COLS.length).setValues([COLS.map(c => c[1])]).setFontWeight('bold').setBackground('#d9e2f3');
     sh.setFrozenRows(1);
   }
+  // SC length / distance columns always numeric (a text "18.8" was read as a date before v3)
+  ['scLength', 'poleDist'].forEach(k => sh.getRange(2, colIdx_(k) + 1, Math.max(sh.getMaxRows() - 1, 1), 1).setNumberFormat('0.0'));
   return sh;
 }
 
@@ -164,7 +166,17 @@ function readRecords_() {
   if (last < 2) return [];
   return sh.getRange(2, 1, last - 1, COLS.length).getValues()
     .map(row => { const o = {}; COLS.forEach((c, i) => o[c[0]] = row[i]); return o; })
-    .filter(o => o._id && String(o.status).indexOf('DELETED') !== 0);
+    .filter(o => o._id && String(o.status).indexOf('DELETED') !== 0)
+    .map(o => { o.scLength = fixSc_(o.scLength); return o; });
+}
+// Rows saved before v3: a typed "18.8" was stored by the Sheet as the date 18 Aug (a serial > 1000). Read it back as 18.8.
+function fixSc_(v) {
+  if (v instanceof Date) return parseFloat(v.getDate() + '.' + (v.getMonth() + 1));
+  if (typeof v === 'number' && v > 1000 && Math.floor(v) === v) {
+    const d = new Date(Date.UTC(1899, 11, 30) + v * 86400000);
+    return parseFloat(d.getUTCDate() + '.' + (d.getUTCMonth() + 1));
+  }
+  return v;
 }
 
 // all=true: rebuild every transformer. Works within a time budget; "remaining" > 0 means call again.
@@ -242,8 +254,7 @@ function writeReserve_(folder, tx, list) {
 
   // data
   const rows = list.slice().sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || (parseInt(a.serial, 10) || 0) - (parseInt(b.serial, 10) || 0));
-  // rows saved before v3 may hold "18.8" turned into a date (18 Aug) by the Sheet: read it back as 18.8
-  const num = v => { if (v instanceof Date) return parseFloat(v.getDate() + '.' + (v.getMonth() + 1)); const n = parseFloat(v); return isFinite(n) && String(v).trim() !== '' ? n : (v === null || v === undefined ? '' : v); };
+  const num = v => { const n = parseFloat(v); return isFinite(n) && String(v).trim() !== '' ? n : (v === null || v === undefined ? '' : v); };
   const data = rows.map((r, i) => {
     const resid = /resid/i.test(r.category || '');
     return [i + 1, r.firstName, r.lastName, String(r.idNumber || ''), String(r.phone || ''), String(r.meter || ''), String(r.upi || ''),
@@ -256,6 +267,7 @@ function writeReserve_(folder, tx, list) {
   body.setFontSize(10).setVerticalAlignment('middle').setBorder(true, true, true, true, true, true);
   [1, 8, 9, 10, 12].forEach(c => sh.getRange(START, c, data.length, 1).setHorizontalAlignment('center'));
   sh.getRange(START, 19, data.length, 2).setNumberFormat('0.00');
+  sh.getRange(START, 8, data.length, 1).setNumberFormat('0.0');
   // photo: file name linked to the photo in Google Drive
   sh.getRange(START, 18, data.length, 1).setRichTextValues(rows.map(r => {
     const t = photoName_(r), b = SpreadsheetApp.newRichTextValue().setText(r.photoUrl ? t : '');
