@@ -1,5 +1,5 @@
 // As-Built Collection service worker — offline app shell.
-const CACHE = "asbuilt-v18";
+const CACHE = "asbuilt-v19";
 const ASSETS = [
   "./",
   "./index.html",

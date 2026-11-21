@@ -78,6 +78,13 @@
   .capinfo{font-size:13px;color:#334155}
   .capinfo .st{font-weight:800;font-size:15px;margin-bottom:2px}
   .capinfo .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+  .ring.sm{width:70px;height:70px}.ring.sm b{font-size:16px}
+  .scbox{margin-top:12px;border-radius:10px;padding:9px 11px;font-size:13px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+  .scbox.miss{background:#f8fafc;border-color:var(--line);color:var(--muted)}
+  .scbox.warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
+  .scbox b{font-size:15px}
+  .txbar{display:flex;gap:8px;margin-bottom:10px}.txbar select{flex:1;min-width:0}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
   .tip{font-size:12px;color:#475569;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:8px 10px;margin-top:12px}
   .warnbox{font-size:12.5px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:9px 11px;margin-top:10px}
   .row2{display:flex;gap:10px;margin-top:12px}
@@ -190,7 +197,7 @@
   <!-- ================= ENTRY ================= -->
   <section id="v-form">
     <div class="card">
-      <h2>📍 Position — TM Rwanda <span class="req">required</span></h2>
+      <h2>📍 Customer house — position <span class="req">required</span></h2>
       <div class="pad">
         <div class="cap">
           <div class="ring" id="ring"><div><b id="ringVal">—</b><small id="ringSub">not captured</small></div></div>
@@ -223,6 +230,34 @@
       <div id="map"></div>
     </div>
 
+    <div class="card" id="poleCard">
+      <h2>🔌 Service pole — position <span class="req">required</span></h2>
+      <div class="pad">
+        <div class="cap">
+          <div class="ring sm" id="pRing"><div><b id="pRingVal">—</b><small id="pRingSub">not captured</small></div></div>
+          <div class="capinfo">
+            <div class="st" id="pCapState">No pole yet</div>
+            <div class="mono" id="pCapXY">E —  ·  N —</div>
+            <div id="pCapMeta" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
+          </div>
+        </div>
+        <div class="row2">
+          <button class="btn dark" id="pCapBtn" onclick="startCapture('pole')">🛰 Capture pole</button>
+          <button class="btn warn hidden" id="pUseBtn" onclick="finishCapture(true)">Use now</button>
+        </div>
+        <div class="row2" style="margin-top:8px">
+          <button class="btn ghost" onclick="samePole()">↺ Same pole as last customer</button>
+          <button class="btn ghost" id="pTapBtn" onclick="toggleTap('pole')">✋ Place pole on map</button>
+        </div>
+        <div class="grid" style="margin-top:12px">
+          <label><span>Pole X · Easting (m)</span><input id="pfx" inputmode="decimal" oninput="typedPole()"></label>
+          <label><span>Pole Y · Northing (m)</span><input id="pfy" inputmode="decimal" oninput="typedPole()"></label>
+        </div>
+        <div class="scbox miss" id="scBox">SC length: capture the house and the pole.</div>
+        <div class="tip">Stand at the foot of the pole that feeds this customer — no photo needed. SC length = horizontal distance pole → house + 6 m, filled automatically.</div>
+      </div>
+    </div>
+
     <div class="card">
       <h2>📷 House photo <span class="req">required</span></h2>
       <div class="pad">
@@ -238,7 +273,7 @@
     </div>
 
     <div class="card">
-      <h2>👤 Customer <span class="req">name required</span></h2>
+      <h2>👤 Customer <span class="req">names required</span></h2>
       <div class="pad grid">
         <div class="full" style="display:flex;gap:8px;flex-wrap:wrap">
           <button type="button" class="btn dark" style="flex:1" onclick="$('idPhotoIn').click()">🪪 Read ID card (photo)</button>
@@ -256,9 +291,10 @@
     <div class="card">
       <h2>⚡ Connection</h2>
       <div class="pad grid">
-        <label><span>Meter number</span><div class="withscan"><input id="f-meter" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')"><button type="button" class="scanbtn" onclick="openScan('meter')" title="Scan barcode">▥</button></div></label>
-        <label><span>UPI number</span><div class="withscan"><input id="f-upi"><button type="button" class="scanbtn" onclick="openScan('upi')" title="Scan">▥</button></div></label>
-        <label><span>SC length (m)</span><input id="f-scLength" inputmode="decimal"></label>
+        <label><span>Meter number</span><div class="withscan"><input id="f-meter" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')"><button type="button" class="scanbtn" onclick="readByPhoto('meter')" title="Read the number from a photo">📷</button><button type="button" class="scanbtn" onclick="openScan('meter')" title="Scan barcode">▥</button></div></label>
+        <label><span>UPI number</span><div class="withscan"><input id="f-upi" placeholder="e.g. 2/01/04/02/1234"><button type="button" class="scanbtn" onclick="readByPhoto('upi')" title="Read the UPI from a photo of the land title">📷</button><button type="button" class="scanbtn" onclick="openScan('upi')" title="Scan QR">▥</button></div></label>
+        <label><span>SC length (m) · auto</span><input id="f-scLength" inputmode="decimal" oninput="scTyped()"></label>
+        <input type="file" id="ocrIn" accept="image/*" capture="environment" class="hidden" onchange="onOcrPhoto(this)">
         <label><span>Category</span><select id="f-category"><option value="">— select —</option><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Public Institution</option><option>Agriculture</option><option>Other</option></select></label>
         <label class="full"><span>Transformer</span>
           <input id="txQ" class="hidden" placeholder="🔍 Search transformer (name or number)…" oninput="buildTxSel()" autocomplete="off" style="margin-bottom:6px">
@@ -269,13 +305,13 @@
     </div>
 
     <div class="card">
-      <h2>🗺 Administrative location <span class="req">village required</span></h2>
+      <h2>🗺 Administrative location</h2>
       <div class="pad grid">
         <div class="full hidden" id="admNote" style="font-size:12.5px;border-radius:9px;padding:7px 10px"></div>
         <label><span>District</span><select id="f-district" onchange="cascade('district')"></select></label>
         <label><span>Sector</span><select id="f-sector" onchange="cascade('sector')"></select></label>
         <label><span>Cell</span><select id="f-cell" onchange="cascade('cell')"></select></label>
-        <label><span>Village <b>*</b></span><select id="f-village" onchange="cascade('village')"></select></label>
+        <label><span>Village</span><select id="f-village" onchange="cascade('village')"></select></label>
       </div>
     </div>
 
@@ -292,6 +328,7 @@
       <div class="stat"><b id="stToday">0</b><span>today</span></div>
       <div class="stat"><b id="stIssue">0</b><span>to check</span></div>
     </div>
+    <div class="txbar"><select id="txFilter" onchange="renderList()"></select><button class="btn ghost" id="txRenBtn" onclick="renameTx()" title="Rename this transformer on all its records">✎ Rename</button><button class="btn ghost" id="txXlsBtn" onclick="exportXLSXOnly($('txFilter').value)" title="RESERVE Excel for this transformer">📊</button></div>
     <input id="q" placeholder="Search name, meter, UPI, village…" oninput="renderList()" style="margin-bottom:12px">
     <div id="list"></div>
   </section>
@@ -302,16 +339,19 @@
       <h2>⬇ Export</h2>
       <div class="pad exp">
         <button class="btn pri" onclick="exportPackage()">📦 Full package (ZIP)<small>Excel report + CSV + all house photos + backup file</small></button>
-        <button class="btn dark" onclick="exportXLSXOnly()">📊 Excel report only<small>RESERVE format, Nyanza</small></button>
+        <label><span>RESERVE report for</span><select id="expTx"></select></label>
+        <button class="btn dark" onclick="exportXLSXOnly($('expTx').value)">📊 Excel report only<small>RESERVE format · one report per transformer</small></button>
         <button class="btn ghost" onclick="exportCSV()">📄 CSV (all fields, for GIS)</button>
       </div>
     </div>
     <div class="card">
       <h2>☁ Automatic sync (Google Drive)</h2>
       <div class="pad exp">
-        <div style="font-size:13px;color:#475569">When the phone has network, every saved record and its house photo are sent to the project Google Sheet and Drive folder. Records stay on the phone as well.</div>
+        <div style="font-size:13px;color:#475569">When the phone has network, every saved record and its house photo are sent to the project Google Sheet and Drive folder, and the RESERVE report of each transformer is updated in Google Drive (folder “WK Connect Survey - Nyanza RESERVE”). Records stay on the phone as well.</div>
         <div id="syncInfo" style="font-size:13px;font-weight:600"></div>
         <button class="btn pri" onclick="syncNow(true)">⟳ Sync now</button>
+        <button class="btn ghost" onclick="reserveNow(true)">📊 Update RESERVE reports on Google Drive</button>
+        <div id="reserveInfo" style="font-size:12.5px;color:var(--muted)"></div>
         <details><summary style="font-size:12.5px;color:var(--muted);cursor:pointer">Server settings (supervisor)</summary>
           <label style="margin-top:10px;display:block"><span>Sync server URL (Apps Script /exec)</span><input id="syncUrlIn" placeholder="https://script.google.com/macros/s/…/exec"></label>
           <button class="btn ghost w100" style="margin-top:10px" onclick="saveSyncUrl()">Test &amp; save</button>
@@ -333,7 +373,7 @@
         <button class="btn ghost hidden" id="installBtn" onclick="doInstall()">⤓ Install on this phone</button>
         <button class="btn ghost" onclick="prepareOCR(true)">🪪 Prepare ID-card reader for offline use</button>
         <div class="about"><div class="mono">WK</div><div><b>Ir Wilbert KIRARA</b><span>Expert Surveyor in Electrical Power Lines<br>Creator of WK Connect Survey</span></div></div>
-        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v2.6 · project: Nyanza · © 2026 Ir Wilbert KIRARA</div>
+        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v3.0 · project: Nyanza · © 2026 Ir Wilbert KIRARA</div>
       </div>
     </div>
   </section>
@@ -365,6 +405,16 @@
     <label style="margin-top:8px;display:block"><span>First name</span><input id="idFirst"></label>
     <label style="margin-top:8px;display:block"><span>ID number (16 digits)</span><input id="idNum" inputmode="numeric" maxlength="16"></label>
     <div class="row2"><button class="btn ghost" onclick="$('idModal').classList.add('hidden')">Cancel</button><button class="btn pri" onclick="applyId()">✓ Fill form</button></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="ocrModal">
+  <div class="box">
+    <h3 id="ocrTitle">Read from photo</h3>
+    <p id="ocrMsg">Check the value against the photo, correct it if needed, then confirm.</p>
+    <input id="ocrVal" style="font-size:18px;font-family:ui-monospace,Menlo,Consolas,monospace">
+    <div class="chips" id="ocrChips"></div>
+    <div class="row2"><button class="btn ghost" onclick="$('ocrModal').classList.add('hidden')">Cancel</button><button class="btn pri" onclick="applyOcr()">✓ Fill form</button></div>
   </div>
 </div>
 
@@ -431,7 +481,8 @@ let formPhoto = null;            // Blob (downscaled, unstamped)
 let agent = localStorage.getItem(AGENT_KEY) || "";
 
 function blank(){ const o={}; TEXT_FIELDS.forEach(k=>o[k]=""); o.district=DEFAULT_DISTRICT;
-  Object.assign(o,{x:"",y:"",lat:null,lng:null,accuracy:null,samples:0,gpsSource:"",manual:false}); return o; }
+  Object.assign(o,{x:"",y:"",lat:null,lng:null,accuracy:null,samples:0,gpsSource:"",manual:false,
+    poleX:"",poleY:"",poleLat:null,poleLng:null,poleAccuracy:null,poleSamples:0,poleManual:false,poleSource:"",poleDist:"",scManual:false}); return o; }
 function nextSerial(){ const n=records.map(r=>parseInt(String(r.serial).replace(/\D/g,""),10)).filter(x=>!isNaN(x)); return n.length?Math.max(...n)+1:1; }
 
 /* ---------- TM Rwanda projection (ITRF2005 / TM Rwanda; GRS80) ---------- */
@@ -492,11 +543,18 @@ function setChip(cls,big,lbl,src,srcCls){
   $("gpsBig").textContent=big; $("gpsLbl").textContent=lbl; const s=$("gpsSrc"); s.textContent=src; s.className="src "+(srcCls||"");
 }
 
-function startCapture(){
+const CAPUI={
+  house:{btn:"capBtn",use:"useBtn",ring:"ring",val:"ringVal",sub:"ringSub",st:"capState",xy:"capXY",meta:"capMeta"},
+  pole:{btn:"pCapBtn",use:"pUseBtn",ring:"pRing",val:"pRingVal",sub:"pRingSub",st:"pCapState",xy:"pCapXY",meta:"pCapMeta"}};
+function startCapture(target){
+  target=target==="pole"?"pole":"house";
+  if(cap){ toast("A capture is already running — wait or tap “Use now”","err"); return; }
   startWatch();
-  cap={ t0:Date.now(), seen:0, fixes:[], rejNet:0, rejAcc:0, rejJump:0, timer:null };
-  form.manual=false;
-  $("capBtn").textContent="⏳ Capturing…"; $("capBtn").disabled=true; $("useBtn").classList.remove("hidden");
+  if(tapMode) toggleTap(false);
+  cap={ target, t0:Date.now(), seen:0, fixes:[], rejNet:0, rejAcc:0, rejJump:0, timer:null };
+  const ui=CAPUI[target];
+  ["capBtn","pCapBtn"].forEach(b=>$(b).disabled=true);
+  $(ui.btn).textContent="⏳ Capturing…"; $(ui.use).classList.remove("hidden");
   cap.timer=setInterval(()=>{ if(!cap) return; renderCap(); if(Date.now()-cap.t0>GPS.maxTime) finishCapture(false); },500);
   renderCap();
 }
@@ -532,29 +590,37 @@ function estimate(f){
 function renderCap(){
   const e=cap?estimate(cap.fixes):null, el=Math.round((Date.now()-(cap?cap.t0:Date.now()))/1000);
   if(cap){
-    $("capState").textContent = e ? "Averaging satellite fixes…" : "Waiting for satellite fixes…";
-    $("capMeta").textContent = (e?e.n:0)+" fixes · "+el+" s"+(cap.rejNet?" · "+cap.rejNet+" network ignored":"")+(cap.rejJump?" · "+cap.rejJump+" jumps removed":"");
+    const ui=CAPUI[cap.target];
+    $(ui.st).textContent = e ? "Averaging satellite fixes…" : "Waiting for satellite fixes…";
+    $(ui.meta).textContent = (e?e.n:0)+" fixes · "+el+" s"+(cap.rejNet?" · "+cap.rejNet+" network ignored":"")+(cap.rejJump?" · "+cap.rejJump+" jumps removed":"");
     const pct = e ? Math.min(100, Math.round(Math.min(e.n/GPS.minSamples,1)*50 + Math.min(GPS.target/e.prec,1)*50)) : Math.min(15,el*2);
-    setRing(e?e.prec:null, pct, e?("est. · "+e.n+" fixes"):"searching");
-    if(e){ const t=wgs84ToTM(e.lat,e.lng); $("capXY").textContent="E "+t.e.toFixed(2)+"  ·  N "+t.n.toFixed(2); if(map) setActivePoint(e.lat,e.lng,e.prec,false,true); }
+    setRing(e?e.prec:null, pct, e?("est. · "+e.n+" fixes"):"searching", ui);
+    if(e){ const t=wgs84ToTM(e.lat,e.lng); $(ui.xy).textContent="E "+t.e.toFixed(2)+"  ·  N "+t.n.toFixed(2);
+      if(map){ if(cap.target==="pole") setPolePoint(e.lat,e.lng,e.prec,false,true); else setActivePoint(e.lat,e.lng,e.prec,false,true); } }
   }
 }
-function setRing(prec,pct,sub){
-  const g=grade(prec); const r=$("ring");
+function setRing(prec,pct,sub,ui){
+  ui=ui||CAPUI.house;
+  const g=grade(prec); const r=$(ui.ring);
   r.style.setProperty("--c", prec==null?"#94a3b8":gradeColor(g)); r.style.setProperty("--p", pct);
-  $("ringVal").textContent = prec==null?"—":"±"+(prec<10?prec.toFixed(1):Math.round(prec));
-  $("ringSub").textContent = sub;
+  $(ui.val).textContent = prec==null?"—":"±"+(prec<10?prec.toFixed(1):Math.round(prec));
+  $(ui.sub).textContent = sub;
 }
 function finishCapture(manualStop){
   if(!cap) return;
   clearInterval(cap.timer);
   const e=estimate(cap.fixes), c=cap; cap=null;
-  $("capBtn").disabled=false; $("useBtn").classList.add("hidden");
-  if(!e){ $("capBtn").textContent="🛰 Capture position"; renderPoint();
+  ["capBtn","pCapBtn"].forEach(b=>$(b).disabled=false); $("useBtn").classList.add("hidden"); $("pUseBtn").classList.add("hidden");
+  if(!e){ renderPoint(); renderPole();
     toast(c.rejNet?"Only network positions received — go outside, open sky, and retry":"No satellite fix — move to open sky and retry","err"); return; }
   const t=wgs84ToTM(e.lat,e.lng);
+  if(c.target==="pole"){
+    Object.assign(form,{ poleX:t.e.toFixed(2), poleY:t.n.toFixed(2), poleLat:e.lat, poleLng:e.lng, poleAccuracy:Number(e.prec.toFixed(1)), poleSamples:e.n, poleManual:false, poleSource:"GNSS" });
+    renderPole(); if(map){ setPolePoint(e.lat,e.lng,e.prec,false,true); fitPair(); } updateSC(true);
+    toast("Pole captured · ±"+e.prec.toFixed(1)+" m · "+e.n+" satellite fixes", grade(e.prec)==="poor"?"err":"ok"); return;
+  }
   Object.assign(form,{ x:t.e.toFixed(2), y:t.n.toFixed(2), lat:e.lat, lng:e.lng, accuracy:Number(e.prec.toFixed(1)), samples:e.n, gpsSource:"GNSS", manual:false });
-  renderPoint(); if(map) setActivePoint(e.lat,e.lng,e.prec,false); checkDup(); autoAdmin(); suggestTx();
+  renderPoint(); if(map) setActivePoint(e.lat,e.lng,e.prec,false); checkDup(); autoAdmin(); suggestTx(); updateSC(true);
   toast("Position captured · ±"+e.prec.toFixed(1)+" m · "+e.n+" satellite fixes", grade(e.prec)==="poor"?"err":"ok");
 }
 function renderPoint(){
@@ -573,8 +639,68 @@ function typedXY(){
   const e=parseFloat(form.x), n=parseFloat(form.y);
   Object.assign(form,{manual:true,accuracy:null,samples:0,gpsSource:"Manual",lat:null,lng:null});
   if(isFinite(e)&&isFinite(n)&&e>300000&&e<700000&&n>4600000&&n<5000000){ const g=tmToWgs84(e,n); form.lat=g.lat; form.lng=g.lon; if(map) setActivePoint(g.lat,g.lon,null,true); }
-  renderPoint(); checkDup(); autoAdmin(); suggestTx(); $("fx").value=form.x; $("fy").value=form.y;
+  renderPoint(); checkDup(); autoAdmin(); suggestTx(); updateSC(true); $("fx").value=form.x; $("fy").value=form.y;
 }
+
+/* ---------- service pole + automatic SC length ---------- */
+const SC_ADD = 6;          // m added to the horizontal pole → house distance
+const SC_MAX_HZ = 50;      // warn above this horizontal distance
+function renderPole(){
+  $("pfx").value=form.poleX||""; $("pfy").value=form.poleY||"";
+  $("pCapBtn").textContent = (form.poleX&&form.poleY) ? "🛰 Re-capture pole" : "🛰 Capture pole";
+  const ui=CAPUI.pole;
+  if(form.poleX&&form.poleY&&form.poleManual){ setRing(null,100,"manual",ui); $("pRing").style.setProperty("--c","#2563eb"); $("pRingVal").textContent="MAN";
+    $("pCapState").textContent = form.poleSource&&/^Same/.test(form.poleSource) ? "Same pole as "+form.poleSource.replace(/^Same as /,"") : "Pole placed by hand";
+    $("pCapXY").textContent="E "+form.poleX+"  ·  N "+form.poleY; $("pCapMeta").textContent="Drag the pole marker to fine-tune, or re-capture."; return; }
+  if(form.poleX&&form.poleY&&form.poleAccuracy!=null){ const g=grade(form.poleAccuracy);
+    setRing(form.poleAccuracy,100,(form.poleSamples||0)+" fixes",ui);
+    $("pCapState").textContent = (form.poleSource&&/^Same/.test(form.poleSource)) ? "Same pole as "+form.poleSource.replace(/^Same as /,"") : g==="good"?"✓ Good pole position":g==="fair"?"Fair — re-capture if possible":"Weak — re-capture in open sky";
+    $("pCapXY").textContent="E "+form.poleX+"  ·  N "+form.poleY; $("pCapMeta").textContent="Source: satellite (GNSS) average"; return; }
+  setRing(null,0,"not captured",ui); $("pCapState").textContent="No pole yet"; $("pCapXY").textContent="E —  ·  N —"; $("pCapMeta").textContent="";
+}
+function typedPole(){
+  form.poleX=$("pfx").value.trim(); form.poleY=$("pfy").value.trim();
+  Object.assign(form,{poleManual:true,poleAccuracy:null,poleSamples:0,poleSource:"Manual",poleLat:null,poleLng:null});
+  const e=parseFloat(form.poleX), n=parseFloat(form.poleY);
+  if(isFinite(e)&&isFinite(n)&&e>300000&&e<700000&&n>4600000&&n<5000000){ const g=tmToWgs84(e,n); form.poleLat=g.lat; form.poleLng=g.lon; if(map) setPolePoint(g.lat,g.lon,null,true); }
+  renderPole(); updateSC(true); $("pfx").value=form.poleX; $("pfy").value=form.poleY;
+}
+function manualPole(lat,lng){
+  if(cap) finishCapture(false);
+  const t=wgs84ToTM(lat,lng);
+  Object.assign(form,{poleLat:lat,poleLng:lng,poleX:t.e.toFixed(2),poleY:t.n.toFixed(2),poleManual:true,poleAccuracy:null,poleSamples:0,poleSource:"Manual"});
+  setPolePoint(lat,lng,null,true,true); renderPole(); updateSC(true);
+}
+function samePole(){
+  const prev=records.filter(r=>r._id!==editingId && r.poleX && r.poleY).sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||"")))[0];
+  if(!prev){ toast("No previous customer with a pole yet","err"); return; }
+  if(cap && cap.target==="pole") finishCapture(false);
+  const keys=["poleX","poleY","poleLat","poleLng","poleAccuracy","poleSamples","poleManual"]; keys.forEach(k=>form[k]=prev[k]);
+  form.poleSource="Same as #"+prev.serial;
+  if(form.poleLat==null){ const g=tmToWgs84(parseFloat(prev.poleX),parseFloat(prev.poleY)); form.poleLat=g.lat; form.poleLng=g.lon; }
+  if(map) setPolePoint(form.poleLat,form.poleLng,form.poleAccuracy,!!form.poleManual);
+  renderPole(); updateSC(true); fitPair(); toast("Pole of record #"+prev.serial+" used","ok");
+}
+function hzDist(){
+  const a=parseFloat(form.x), b=parseFloat(form.y), c=parseFloat(form.poleX), d=parseFloat(form.poleY);
+  return (isFinite(a)&&isFinite(b)&&isFinite(c)&&isFinite(d)) ? Math.hypot(a-c,b-d) : null;
+}
+const autoSC = hz => (Math.round((hz+SC_ADD)*10)/10).toFixed(1);
+// reset=true when a position changed: the automatic value replaces any typed value
+function updateSC(reset){
+  const hz=hzDist(), box=$("scBox"); drawLink();
+  if(hz==null){ form.poleDist=""; box.className="scbox miss"; box.textContent="SC length: capture the house and the pole."; return; }
+  form.poleDist=hz.toFixed(1);
+  if(reset) form.scManual=false;
+  const a=autoSC(hz);
+  if(!form.scManual){ form.scLength=a; $("f-scLength").value=a; }
+  const far=hz>SC_MAX_HZ;
+  box.className="scbox"+(far||form.scManual?" warn":"");
+  box.innerHTML = form.scManual
+    ? "SC length typed by hand: <b>"+esc(form.scLength||"—")+" m</b> · automatic value would be "+a+" m (Hz "+hz.toFixed(1)+" m + "+SC_ADD+" m). <a href='#' onclick='form.scManual=false;updateSC();return false'>Use automatic</a>"
+    : "SC length = Hz "+hz.toFixed(1)+" m + "+SC_ADD+" m = <b>"+a+" m</b>"+(far?"<br>⚠ The pole is "+Math.round(hz)+" m from the house — check it is the right pole.":"");
+}
+function scTyped(){ const v=$("f-scLength").value.trim(); form.scLength=v; const hz=hzDist(); form.scManual = hz!=null && v!=="" && v!==autoSC(hz); if(hz!=null) updateSC(false); }
 
 /* ---------- photo ---------- */
 async function onPhoto(inp){
@@ -606,8 +732,9 @@ async function stampPhoto(blob,r){
     "#"+(r.serial||"")+"  "+name+(r.meter?"  ·  Meter "+r.meter:""),
     "E "+(r.x||"—")+"  N "+(r.y||"—")+"  (TM Rwanda"+(r.accuracy!=null?", ±"+r.accuracy+" m":r.manual?", manual":"")+")",
     [r.district,r.sector,r.cell,r.village].filter(Boolean).join(" / "),
+    (r.poleX?"Pole E "+r.poleX+"  N "+r.poleY:"")+(r.scLength?(r.poleX?"  ·  ":"")+"SC "+r.scLength+" m":"")+(r.transformer?"  ·  "+r.transformer:""),
     fmtDate(r.createdAt)+"  ·  Agent: "+(r.agent||"")
-  ];
+  ].filter(Boolean);
   const fs=Math.max(14,Math.round(c.width/42)), lh=Math.round(fs*1.35), h=lh*lines.length+fs;
   g.fillStyle="rgba(15,23,42,.72)"; g.fillRect(0,c.height-h,c.width,h);
   g.fillStyle="#fff"; g.font="600 "+fs+"px sans-serif"; g.textBaseline="top";
@@ -623,7 +750,7 @@ function photoName(r){
 function writeForm(){
   TEXT_FIELDS.forEach(k=>{ const el=$("f-"+k); if(el && el.tagName!=="SELECT") el.value=form[k]||""; });
   ["category","phase"].forEach(k=>$("f-"+k).value=form[k]||"");
-  syncCascade(); renderPoint(); buildTxSel(); checkDup(); if(!form.x) $("admNote").classList.add("hidden");
+  syncCascade(); renderPoint(); renderPole(); buildTxSel(); checkDup(); updateSC(false); if(!form.x) $("admNote").classList.add("hidden");
   $("saveBtn").textContent = editingId ? "💾 Update record" : "💾 Save & next";
 }
 function readForm(){ TEXT_FIELDS.forEach(k=>{ const el=$("f-"+k); if(el) form[k]=el.value.trim(); }); form.lastName=upName(form.lastName); }
@@ -634,7 +761,7 @@ function clearForm(ask){
   if(ask && (formPhoto || form.x || $("f-firstName").value || $("f-lastName").value) && !confirm("Clear this entry?")) return;
   if(cap) finishCapture(false);
   form=blank(); form.serial=String(nextSerial()); editingId=null; formPhoto=null; showPhoto(null); $("txQ").value="";
-  if(map) clearActive(); writeForm(); window.scrollTo(0,0);
+  if(map){ clearActive(); clearPole(); } writeForm(); window.scrollTo(0,0);
 }
 
 /* ---------- cascading admin ---------- */
@@ -663,10 +790,13 @@ async function saveRecord(){
   readForm();
   const miss=[];
   if(!agent) { askAgent(true); return; }
-  if(!form.firstName && !form.lastName) miss.push("customer name");
-  if(!form.x || !form.y) miss.push("position");
+  // Required: house photo, names, house position, pole position. Everything else is optional.
+  const inst = form.category && !/resid/i.test(form.category);   // institutions / businesses may have one name only
+  if(inst ? !(form.firstName||form.lastName) : !(form.firstName&&form.lastName)) miss.push(inst?"customer name":"first and last name");
+  if(!form.x || !form.y) miss.push("house position");
+  const oldNoPole = editingId && !(records.find(r=>r._id===editingId)||{}).poleX;   // records saved before v3
+  if((!form.poleX || !form.poleY) && !oldNoPole) miss.push("pole position");
   if(!formPhoto) miss.push("house photo");
-  if(!form.village) miss.push("village");
   if(miss.length){ toast("Missing: "+miss.join(", "),"err"); return; }
   if(cap){ toast("Position capture still running — tap “Use now” or wait","err"); return; }
   if(form.accuracy!=null && form.accuracy>10 && !confirm("Position precision is ±"+form.accuracy+" m (weak). Save anyway?")) return;
@@ -677,9 +807,13 @@ async function saveRecord(){
   if(form.phone && !/^07[2389]\d{7}$/.test(form.phone)) warn.push("Phone number is not a valid Rwandan mobile (07X XXX XXXX)");
   if(form.meter && form.meter.length<8) warn.push("Meter number looks too short");
   if(form.idNumber){ const d2=records.find(r=>r.idNumber===form.idNumber && r._id!==editingId); if(d2) warn.push("ID number already used on record #"+d2.serial); }
+  if(oldNoPole && (!form.poleX||!form.poleY)) warn.push("No service pole on this record — SC length is not checked");
+  { const hz=hzDist(); if(hz!=null && hz>SC_MAX_HZ) warn.push("Pole is "+Math.round(hz)+" m from the house — check it is the right pole"); }
+  if(form.poleAccuracy!=null && form.poleAccuracy>10) warn.push("Pole position precision is ±"+form.poleAccuracy+" m (weak)");
   { const e=parseFloat(form.x), n=parseFloat(form.y); const near=(isFinite(e)&&isFinite(n))?nearbyRecords(e,n):[];
     if(near.length) warn.push("Position is "+near[0].d.toFixed(1)+" m from record #"+near[0].r.serial+" ("+[near[0].r.firstName,near[0].r.lastName].filter(Boolean).join(" ")+") — possible duplicate"); }
   if(warn.length && !confirm("Please check:\n• "+warn.join("\n• ")+"\n\nSave anyway?")) return;
+  addCustomTx(form.transformer);
   const now=new Date().toISOString();
   if(editingId){
     const old=records.find(r=>r._id===editingId);
@@ -694,7 +828,7 @@ async function saveRecord(){
     records.push(rec); persist();
     const keep={}; STICKY.forEach(k=>keep[k]=form[k]);
     form=Object.assign(blank(),keep); form.serial=String(nextSerial()); formPhoto=null; showPhoto(null);
-    if(map) clearActive(); writeForm(); drawMarkers(); window.scrollTo(0,0);
+    if(map){ clearActive(); clearPole(); } writeForm(); drawMarkers(); window.scrollTo(0,0);
     toast("Record #"+rec.serial+" saved","ok"); syncSoon();
   }
 }
@@ -704,7 +838,9 @@ async function editRecord(id){
   form=Object.assign(blank(),r); editingId=id;
   formPhoto=await photoGet(id); showPhoto(formPhoto);
   writeForm(); setView("form");
-  const ll=recLatLng(r); if(map&&ll) setTimeout(()=>{ map.invalidateSize(); setActivePoint(ll[0],ll[1],r.accuracy,!!r.manual); map.setView(ll,18); },80);
+  const ll=recLatLng(r), pl=poleLatLng(r);
+  if(map){ clearActive(); clearPole(); }
+  if(map&&ll) setTimeout(()=>{ map.invalidateSize(); setActivePoint(ll[0],ll[1],r.accuracy,!!r.manual); if(pl) setPolePoint(pl[0],pl[1],r.poleAccuracy,!!r.poleManual,true); drawLink(); if(pl) fitPair(); else map.setView(ll,18); },80);
 }
 async function removeRecord(id){
   const r=records.find(x=>x._id===id); if(!r) return;
@@ -715,14 +851,17 @@ async function removeRecord(id){
 
 /* ---------- list ---------- */
 const thumbs=new Map();
-function issues(r){ const a=[]; if(!r.photo) a.push("no photo"); if(!r.x||!r.y) a.push("no position"); if(r.accuracy!=null&&r.accuracy>10) a.push("weak GPS"); return a; }
+function issues(r){ const a=[]; if(!r.photo) a.push("no photo"); if(!r.x||!r.y) a.push("no position"); if(!r.poleX||!r.poleY) a.push("no pole"); if(r.accuracy!=null&&r.accuracy>10) a.push("weak GPS"); return a; }
 function renderList(){
   const q=$("q").value.trim().toLowerCase();
   const today=new Date().toISOString().slice(0,10);
-  $("stTotal").textContent=records.length;
-  $("stToday").textContent=records.filter(r=>(r.createdAt||"").slice(0,10)===today).length;
-  $("stIssue").textContent=records.filter(r=>issues(r).length).length;
-  const shown=(q?records.filter(r=>TEXT_FIELDS.concat("agent").some(k=>String(r[k]||"").toLowerCase().includes(q))):records).slice().reverse();
+  fillTxSelect($("txFilter"), "All transformers");
+  const tf=$("txFilter").value, base=txRecords(tf);
+  $("txRenBtn").disabled = tf===TX_ALL || tf===TX_NONE; $("txXlsBtn").disabled = !base.length;
+  $("stTotal").textContent=base.length;
+  $("stToday").textContent=base.filter(r=>(r.createdAt||"").slice(0,10)===today).length;
+  $("stIssue").textContent=base.filter(r=>issues(r).length).length;
+  const shown=(q?base.filter(r=>TEXT_FIELDS.concat("agent").some(k=>String(r[k]||"").toLowerCase().includes(q))):base).slice().reverse();
   if(!shown.length){ $("list").innerHTML='<div class="empty">'+(records.length?"No matches.":"No records yet.")+'</div>'; return; }
   $("list").innerHTML=shown.map(r=>{
     const name=[r.firstName,r.lastName].filter(Boolean).join(" ")||"Unnamed";
@@ -731,7 +870,8 @@ function renderList(){
     const iss=issues(r).filter(x=>x!=="weak GPS").map(x=>'<span class="tag miss">'+x+'</span>').join("");
     return '<div class="rec"><div class="th" data-id="'+r._id+'">🏠</div><div class="bd">'
       +'<div class="t"><span class="sn">#'+esc(r.serial||"—")+'</span>'+esc(name)+'</div>'
-      +'<div class="m">'+tag+iss+(r.meter?'Meter '+esc(r.meter)+' · ':'')+esc(r.village||"")+'</div>'
+      +'<div class="m">'+tag+iss+(r.meter?'Meter '+esc(r.meter)+' · ':'')+(r.scLength?'SC '+esc(r.scLength)+' m · ':'')+esc(r.village||"")+'</div>'
+      +'<div class="m">⚡ '+esc(r.transformer||"no transformer")+'</div>'
       +'<div class="m">'+esc(r.agent||"")+' · '+fmtDate(r.createdAt)+(syncUrl()?(isSynced(r)?' · ☁ synced':' · ⏳ not synced'):'')+'</div></div>'
       +'<div class="ac"><button onclick="editRecord(\''+r._id+'\')">✎ Edit</button><button class="del" onclick="removeRecord(\''+r._id+'\')">🗑</button></div></div>';
   }).join("");
@@ -748,7 +888,7 @@ function setView(v){
   ["form","list","exp"].forEach(k=>{ $("v-"+k).classList.toggle("hidden",k!==v); $("tab-"+k).classList.toggle("on",k===v); });
   $("savebar").classList.toggle("hidden",v!=="form");
   if(v==="list") renderList();
-  if(v==="exp"){ storageInfo(); $("syncUrlIn").value=syncUrl(); renderSync(); }
+  if(v==="exp"){ renderReserve(); storageInfo(); $("syncUrlIn").value=syncUrl(); renderSync(); fillTxSelect($("expTx"), "All transformers — one report each"); }
   if(v==="form"){ initMap(); setTimeout(()=>map&&map.invalidateSize(),60); }
   window.scrollTo(0,0);
 }
@@ -767,23 +907,50 @@ function safeAgent(){ return (agent||"agent").normalize("NFD").replace(/[̀-ͯ]/
 function download(blob,name){ const u=URL.createObjectURL(blob), a=document.createElement("a"); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),8000); }
 function sorted(){ return records.slice().sort((a,b)=>(parseInt(a.serial)||0)-(parseInt(b.serial)||0)); }
 
-async function buildXLSX(){
+/* ---------- transformers in the app: groups, custom names, rename ---------- */
+const TX_ALL="__all", TX_NONE="__none", CUSTOM_TX_KEY="wkc-custom-tx";
+function customTx(){ try{ return JSON.parse(localStorage.getItem(CUSTOM_TX_KEY))||[]; }catch(e){ return []; } }
+function addCustomTx(name){ name=String(name||"").trim(); if(!name || TXLIST.some(t=>t.name===name)) return; const c=customTx(); if(!c.includes(name)){ c.push(name); localStorage.setItem(CUSTOM_TX_KEY,JSON.stringify(c)); } }
+function txGroups(list){ const m=new Map(); (list||records).forEach(r=>{ const k=String(r.transformer||"").trim(); if(!m.has(k)) m.set(k,[]); m.get(k).push(r); });
+  return [...m.entries()].sort((a,b)=>a[0]===""?1:b[0]===""?-1:a[0].localeCompare(b[0])); }
+function txRecords(v){ if(!v||v===TX_ALL) return records; if(v===TX_NONE) return records.filter(r=>!String(r.transformer||"").trim()); return records.filter(r=>String(r.transformer||"").trim()===v); }
+function fillTxSelect(el, allLabel, want){
+  if(!el) return; const cur=want||el.value||TX_ALL, g=txGroups();
+  el.innerHTML='<option value="'+TX_ALL+'">'+esc(allLabel)+' ('+records.length+')</option>'
+    + g.map(([k,l])=>k?'<option value="'+esc(k)+'">⚡ '+esc(k)+' ('+l.length+')</option>':'<option value="'+TX_NONE+'">No transformer ('+l.length+')</option>').join("");
+  el.value=[...el.options].some(o=>o.value===cur)?cur:TX_ALL;
+}
+function renameTx(){
+  const old=$("txFilter").value; if(old===TX_ALL||old===TX_NONE) return;
+  const n=(prompt("New name for transformer “"+old+"” (changes all "+txRecords(old).length+" records):",old)||"").trim();
+  if(!n||n===old) return;
+  const now=new Date().toISOString(); let k=0;
+  records.forEach(r=>{ if(String(r.transformer||"").trim()===old){ r.transformer=n; r.updatedAt=now; r.editedBy=agent; k++; } });
+  addCustomTx(n); const c=customTx().filter(x=>x!==old); localStorage.setItem(CUSTOM_TX_KEY,JSON.stringify(c)); addCustomTx(n);
+  if(form.transformer===old){ form.transformer=n; buildTxSel(); }
+  persist(); fillTxSelect($("txFilter"),"All transformers",n); renderList(); syncSoon(); toast("Transformer renamed on "+k+" record(s)","ok");
+}
+const safeName = s => String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"");
+function reserveName(tx){ return "RESERVE_Nyanza_"+(tx?safeName(tx):"No_transformer")+"_"+stamp()+".xlsx"; }
+
+async function buildXLSX(list, txName){
   if(typeof ExcelJS==="undefined") throw new Error("Excel library not loaded");
+  list=list||records;
   const buf=await (await fetch(TEMPLATE)).arrayBuffer();
   const wb=new ExcelJS.Workbook(); await wb.xlsx.load(buf);
   const ws=wb.worksheets[0], START=6, LASTFMT=25, tmpl=ws.getRow(START);
   const clone=st=>{ try{ return JSON.parse(JSON.stringify(st)); }catch(e){ return {}; } };
-  const uniq=k=>{ const s=new Set(records.map(r=>String(r[k]||"").trim()).filter(Boolean)); return s.size===1?[...s][0]:""; };
+  const vals=k=>[...new Set(list.map(r=>String(r[k]||"").trim()).filter(Boolean))].sort();
   ws.getCell("D1").value=PROJECT_TITLE;
-  const sec=uniq("sector"); ws.getCell("A2").value="REPORT ON INSTALLED PREPAID METER"+(sec?" IN "+sec.toUpperCase()+" SECTOR":"");
-  const tx=uniq("transformer"); ws.getCell("A3").value="TRANSFORMER NAME:   "+(tx||"");
+  const secs=vals("sector"); ws.getCell("A2").value="REPORT ON INSTALLED PREPAID METER"+(secs.length?" IN "+secs.join(" / ").toUpperCase()+" SECTOR"+(secs.length>1?"S":""):"");
+  const tx=txName!=null?txName:(vals("transformer").length===1?vals("transformer")[0]:""); ws.getCell("A3").value="TRANSFORMER NAME:   "+(tx||"");
   const num=v=>{ const n=parseFloat(v); return isFinite(n)&&String(v).trim()!==""?n:(v||null); };
-  sorted().forEach((r,i)=>{
+  list.slice().sort((a,b)=>String(a.createdAt||"").localeCompare(String(b.createdAt||""))||(parseInt(a.serial)||0)-(parseInt(b.serial)||0)).forEach((r,i)=>{
     const row=ws.getRow(START+i);
     if(START+i>LASTFMT){ for(let c=1;c<=20;c++) row.getCell(c).style=clone(tmpl.getCell(c).style); row.height=tmpl.height; }
     const set=(c,v)=>{ row.getCell(c).value=(v===undefined||v===null||v==="")?null:v; };
     const resid=/resid/i.test(r.category||"");
-    set(1,num(r.serial)||(i+1)); set(2,r.firstName); set(3,r.lastName); set(4,r.idNumber); set(5,r.phone);
+    set(1,i+1); set(2,r.firstName); set(3,r.lastName); set(4,r.idNumber); set(5,r.phone);
     set(6,r.meter); set(7,r.upi); set(8,num(r.scLength)); set(9,resid?"X":null); set(10,(r.category&&!resid)?"X":null);
     set(11,r.transformer); set(12,r.phase); set(13,r.sector); set(14,r.cell); set(15,r.village); set(16,r.comment);
     set(17,r.agent);
@@ -794,15 +961,24 @@ async function buildXLSX(){
   return await wb.xlsx.writeBuffer();
 }
 function buildCSV(){
-  const H=[["serial","Serial"],["firstName","First Name"],["lastName","Last Name"],["idNumber","ID Number"],["phone","Phone"],["meter","Meter Number"],["upi","UPI"],["scLength","SC Length (m)"],["category","Category"],["transformer","Transformer"],["phase","Phase"],["district","District"],["sector","Sector"],["cell","Cell"],["village","Village"],["comment","Comment"],["x","X Easting (TM Rwanda)"],["y","Y Northing (TM Rwanda)"],["lat","Latitude (WGS84)"],["lng","Longitude (WGS84)"],["accuracy","GPS Precision (m)"],["samples","GPS Fixes"],["gpsSource","Point Source"],["agent","Agent"],["photoFile","Photo"],["createdAt","Created"],["updatedAt","Updated"]];
+  const H=[["serial","Serial"],["firstName","First Name"],["lastName","Last Name"],["idNumber","ID Number"],["phone","Phone"],["meter","Meter Number"],["upi","UPI"],["scLength","SC Length (m)"],["category","Category"],["transformer","Transformer"],["phase","Phase"],["district","District"],["sector","Sector"],["cell","Cell"],["village","Village"],["comment","Comment"],["x","X Easting (TM Rwanda)"],["y","Y Northing (TM Rwanda)"],["lat","Latitude (WGS84)"],["lng","Longitude (WGS84)"],["accuracy","GPS Precision (m)"],["samples","GPS Fixes"],["gpsSource","Point Source"],["poleX","Pole X (TM Rwanda)"],["poleY","Pole Y (TM Rwanda)"],["poleAccuracy","Pole GPS Precision (m)"],["poleSource","Pole Source"],["poleDist","Pole-House Hz Distance (m)"],["scManual","SC Typed By Hand"],["agent","Agent"],["photoFile","Photo"],["createdAt","Created"],["updatedAt","Updated"]];
   const e=v=>{ const s=String(v==null?"":v); return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
   const rows=sorted().map(r=>{ const ll=recLatLng(r)||[]; const o=Object.assign({},r,{lat:ll[0]!=null?ll[0].toFixed(7):"",lng:ll[1]!=null?ll[1].toFixed(7):"",gpsSource:r.manual?"Manual":(r.gpsSource||(r.accuracy!=null?"GPS":"")),photoFile:r.photo?"photos/"+photoName(r):""}); return H.map(h=>e(o[h[0]])).join(","); });
   return "﻿"+[H.map(h=>h[1]).join(",")].concat(rows).join("\r\n");
 }
-async function exportXLSXOnly(){
+const XLSX_MIME="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+async function exportXLSXOnly(sel){
   if(!records.length) return toast("No records to export","err");
-  try{ toast("Building Excel…","info"); const b=await buildXLSX();
-    download(new Blob([b],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),"RESERVE_Nyanza_"+stamp()+".xlsx"); toast("Excel exported ("+records.length+")","ok");
+  sel=sel||TX_ALL;
+  const groups = sel===TX_ALL ? txGroups() : [[sel===TX_NONE?"":sel, txRecords(sel)]];
+  if(!groups.length || !groups[0][1].length) return toast("No records for this transformer","err");
+  try{
+    toast("Building Excel…","info");
+    if(groups.length===1){ const [tx,l]=groups[0]; download(new Blob([await buildXLSX(l,tx)],{type:XLSX_MIME}),reserveName(tx)); toast("RESERVE exported · "+(tx||"no transformer")+" · "+l.length+" customers","ok"); return; }
+    if(typeof JSZip==="undefined") throw new Error("ZIP library not loaded");
+    const z=new JSZip(); for(const [tx,l] of groups) z.file(reserveName(tx), await buildXLSX(l,tx));
+    download(await z.generateAsync({type:"blob"}),"RESERVE_Nyanza_"+stamp()+"_"+groups.length+"_transformers.zip");
+    toast(groups.length+" RESERVE reports exported (one per transformer)","ok");
   }catch(e){ console.error(e); toast("Excel export failed: "+(e.message||e),"err"); }
 }
 function exportCSV(){
@@ -815,7 +991,7 @@ async function exportPackage(){
   try{
     const z=new JSZip(), base="WKConnect_Nyanza_"+stamp()+"_"+safeAgent();
     toast("Building Excel…","info");
-    z.file("RESERVE_Nyanza_"+stamp()+".xlsx", await buildXLSX());
+    for(const [tx,l] of txGroups()) z.file(reserveName(tx), await buildXLSX(l,tx));
     z.file("data.csv", buildCSV());
     const ph=z.folder("photos"), raw=z.folder("backup_photos"); let n=0, i=0;
     for(const r of sorted()){
@@ -893,8 +1069,33 @@ async function syncNow(manual){
     }
     lastSyncOk=new Date().toISOString();
     if(manual || sent) toast(sent?"Synced "+sent+" record(s) to Google Drive":"Everything already synced","ok");
+    if(sent || reserveDirty()) setTimeout(()=>reserveNow(false),300);
   }catch(e){ syncErr=(e.name==="AbortError"?"timeout":(e.message||String(e))); if(manual) toast("Sync failed: "+syncErr,"err"); }
   finally{ syncBusy=false; renderSync(); }
+}
+/* RESERVE reports in Google Drive: the server rebuilds the report of every transformer that changed */
+const RES_KEY="wkc-reserve";
+function reserveState(){ try{ return JSON.parse(localStorage.getItem(RES_KEY))||{}; }catch(e){ return {}; } }
+function reserveDirty(){ return !!reserveState().dirty; }
+let reserveBusy=false;
+async function reserveNow(manual){
+  if(!syncUrl()||reserveBusy) return;
+  if(!navigator.onLine){ if(manual) toast("No network","err"); return; }
+  reserveBusy=true; const st=reserveState(); st.dirty=true; localStorage.setItem(RES_KEY,JSON.stringify(st)); renderReserve("Updating RESERVE reports on Google Drive…");
+  try{
+    let j=await post({action:"reserve",all:!!manual}), built=(j.built||[]).slice();
+    for(let k=0;k<15 && j.remaining>0;k++){ renderReserve("Updating RESERVE reports… "+j.remaining+" transformer(s) left"); j=await post({action:"reserve",all:false}); built=built.concat(j.built||[]); }
+    j.built=built;
+    const s={dirty:!!j.remaining,at:new Date().toISOString(),folderUrl:j.folderUrl||st.folderUrl||"",built:built.length};
+    localStorage.setItem(RES_KEY,JSON.stringify(s));
+    if(manual) toast((j.built||[]).length?"RESERVE updated on Google Drive · "+j.built.length+" transformer(s)":"RESERVE reports already up to date","ok");
+    renderReserve();
+  }catch(e){ renderReserve("RESERVE update failed: "+(e.message||e)); if(manual) toast("RESERVE update failed: "+(e.message||e),"err"); }
+  finally{ reserveBusy=false; }
+}
+function renderReserve(msg){
+  const el=$("reserveInfo"); if(!el) return; const s=reserveState();
+  el.innerHTML = msg ? esc(msg) : (s.at ? "RESERVE reports updated "+fmtDate(s.at)+(s.folderUrl?" · <a href='"+esc(s.folderUrl)+"' target='_blank' rel='noopener'>Open folder (supervisor)</a>":"") : "");
 }
 async function saveSyncUrl(){
   const u=$("syncUrlIn").value.trim();
@@ -966,9 +1167,10 @@ function buildTxSel(){
   const nq=x=>String(x||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
   const term=nq(q.value);
   let list;
-  if(term){ const words=term.split(" "); list=TXLIST.filter(t=>{ const h=nq(t.name+" "+t.sector); return words.every(w=>h.includes(w)); }); }
-  else { list=TXLIST.filter(t=>!sec || (t.sector||"").toLowerCase()===sec); if(!list.length) list=TXLIST; }
-  const known=TXLIST.some(t=>t.name===cur);
+  const ALL=allTx();
+  if(term){ const words=term.split(" "); list=ALL.filter(t=>{ const h=nq(t.name+" "+t.sector); return words.every(w=>h.includes(w)); }); }
+  else { list=ALL.filter(t=>t.added || !sec || (t.sector||"").toLowerCase()===sec); if(!list.length) list=ALL; }
+  const known=allTx().some(t=>t.name===cur);
   const label = term ? (list.length+" found") : (sec ? form.sector : "all sectors");
   sel.innerHTML='<option value="">— select transformer ('+esc(label)+') —</option>'
     + list.map(t=>'<option value="'+esc(t.name)+'"'+(t.name===cur?' selected':'')+'>'+esc(t.name)+(term||!sec?"  · "+esc(t.sector):"")+'</option>').join("")
@@ -979,6 +1181,10 @@ function buildTxSel(){
   inp.classList.toggle("hidden", !(cur && !known));
   inp.value=cur;
 }
+// Nyanza list + transformers added in the field (typed with "Other") + any name already used in a record
+function allTx(){ const seen=new Set(TXLIST.map(t=>t.name)), extra=[];
+  customTx().concat(records.map(r=>String(r.transformer||"").trim())).forEach(n=>{ if(n && !seen.has(n)){ seen.add(n); extra.push({name:n,sector:"added",added:true}); } });
+  return extra.sort((a,b)=>a.name.localeCompare(b.name)).concat(TXLIST); }
 function onTxSel(){
   const v=$("txSel").value, inp=$("f-transformer");
   if(v==="__other"){ inp.classList.remove("hidden"); inp.value=""; form.transformer=""; inp.focus(); return; }
@@ -1040,6 +1246,50 @@ async function onIdPhoto(inp){
     $("idMsg").textContent = (r.id||r.lastName) ? "Read from the card — correct anything wrong, then confirm." : "Could not read the card clearly. Retake the photo flat, in good light, or type the values.";
     $("idModal").classList.remove("hidden");
   }catch(e){ if(e) console.error(e); }
+}
+/* ---------- meter number / UPI read from a photo (offline OCR) ---------- */
+let ocrField=null;
+const OCR_LABEL={meter:"Meter number",upi:"UPI number"};
+function readByPhoto(field){ ocrField=field; $("ocrIn").click(); prepareOCR(false).catch(()=>{}); }
+async function onOcrPhoto(inp){
+  const f=inp.files&&inp.files[0]; inp.value=""; if(!f||!ocrField) return;
+  const field=ocrField;
+  try{
+    toast("Reading "+OCR_LABEL[field].toLowerCase()+"…","info");
+    const img=await downscale(f,2000,0.92);
+    const w=await prepareOCR(false);
+    await w.setParameters({ tessedit_char_whitelist: field==="meter"?"0123456789 ":"0123456789/ ", tessedit_pageseg_mode:"11" });
+    let text="";
+    try{ text=(await w.recognize(img)).data.text||""; }
+    finally{ await w.setParameters({ tessedit_char_whitelist:"", tessedit_pageseg_mode:"3" }); }
+    const c = field==="meter" ? meterCandidates(text) : upiCandidates(text);
+    $("ocrTitle").textContent=OCR_LABEL[field]+" — check and confirm";
+    $("ocrMsg").textContent = c.length ? "Read from the photo — compare with the "+(field==="meter"?"meter":"land title")+", correct if needed." : "Nothing readable found. Retake the photo closer, flat and sharp, or type the value.";
+    $("ocrVal").value=c[0]||""; $("ocrVal").dataset.field=field;
+    $("ocrChips").innerHTML=c.slice(1,5).map(v=>'<button type="button" class="chipbtn" onclick="$(\'ocrVal\').value=this.textContent">'+esc(v)+'</button>').join("");
+    $("ocrModal").classList.remove("hidden");
+  }catch(e){ if(e) console.error(e); }
+}
+function meterCandidates(text){
+  const out=new Map(), add=(v,score)=>{ if(v.length<8||v.length>13) return; out.set(v,(out.get(v)||0)+score); };
+  String(text||"").split(/\r?\n/).forEach(l=>{
+    const joined=l.replace(/[^0-9]/g,""); (l.match(/\d+/g)||[]).forEach(d=>add(d, d.length===11?3:d.length===13?2:1));
+    const m=joined.match(/\d{11,13}/); if(m) add(m[0].slice(0,13), m[0].length===11?4:2);
+  });
+  return [...out.entries()].sort((a,b)=>b[1]-a[1]||Math.abs(a[0].length-11)-Math.abs(b[0].length-11)).map(e=>e[0]);
+}
+function upiCandidates(text){
+  const out=[], t=String(text||"").replace(/[|\\]/g,"/");
+  const re=/(\d)\s*\/\s*(\d{2})\s*\/\s*(\d{2})\s*\/\s*(\d{2})\s*\/\s*(\d{1,6})/g; let m;
+  while((m=re.exec(t))) { const v=m.slice(1).join("/"); if(!out.includes(v)) out.push(v); }
+  if(!out.length){ // slashes not read: try "d dd dd dd n" groups
+    const g=t.match(/\b(\d)\s+(\d{2})\s+(\d{2})\s+(\d{2})\s+(\d{1,6})\b/); if(g) out.push(g.slice(1).join("/")); }
+  return out;
+}
+function applyOcr(){
+  const field=$("ocrVal").dataset.field, v=$("ocrVal").value.trim().replace(field==="meter"?/\D/g:/\s+/g,"");
+  if(field && v){ form[field]=v; $("f-"+field).value=v; toast(OCR_LABEL[field]+" filled","ok"); }
+  $("ocrModal").classList.add("hidden");
 }
 function applyId(){
   const id=$("idNum").value.replace(/\D/g,""), ln=upName($("idLast").value), fn=$("idFirst").value.trim();
@@ -1146,7 +1396,7 @@ function toast(m,k){ const t=$("toast"); t.className=k||"ok"; t.textContent=m; c
 /* =====================================================================
    MAP
    ===================================================================== */
-let map=null, markerLayer=null, meMarker=null, active=null, activeCircle=null, tapMode=false;
+let map=null, markerLayer=null, meMarker=null, active=null, activeCircle=null, tapMode=false, poleMk=null, poleLink=null;
 const RW_CENTER=[-2.35,29.74];
 function initMap(){
   if(map||typeof L==="undefined") return;
@@ -1157,7 +1407,7 @@ function initMap(){
   L.control.layers({"Satellite":sat,"Streets":osm},{"Village boundaries & names":villLayer},{position:"topright"}).addTo(map);
   map.on("moveend zoomend",drawVillages); map.on("overlayadd overlayremove",drawVillages);
   markerLayer=L.layerGroup().addTo(map);
-  map.on("click",e=>{ if(tapMode) manualPoint(e.latlng.lat,e.latlng.lng); });
+  map.on("click",e=>{ if(tapMode==="pole") manualPole(e.latlng.lat,e.latlng.lng); else if(tapMode) manualPoint(e.latlng.lat,e.latlng.lng); });
   drawMarkers(); drawVillages(); setTimeout(()=>{ map.invalidateSize(); fitPoints(); },80);
 }
 function drawMarkers(){
@@ -1165,7 +1415,9 @@ function drawMarkers(){
   records.forEach(r=>{ const ll=recLatLng(r); if(!ll) return;
     const col=r.manual?"#2563eb":gradeColor(grade(r.accuracy));
     L.circleMarker(ll,{radius:7,color:"#fff",weight:2,fillColor:col,fillOpacity:1})
-      .bindPopup("<b>#"+esc(r.serial)+" · "+esc([r.firstName,r.lastName].filter(Boolean).join(" "))+"</b><br>E "+esc(r.x)+"  N "+esc(r.y)+(r.accuracy!=null?" (±"+r.accuracy+" m)":"")+(r.meter?"<br>Meter "+esc(r.meter):"")).addTo(markerLayer); });
+      .bindPopup("<b>#"+esc(r.serial)+" · "+esc([r.firstName,r.lastName].filter(Boolean).join(" "))+"</b><br>E "+esc(r.x)+"  N "+esc(r.y)+(r.accuracy!=null?" (±"+r.accuracy+" m)":"")+(r.meter?"<br>Meter "+esc(r.meter):"")+(r.scLength?"<br>SC "+esc(r.scLength)+" m":"")).addTo(markerLayer);
+    const pl=poleLatLng(r); if(pl){ L.polyline([pl,ll],{color:"#fde047",weight:1.5,opacity:.8}).addTo(markerLayer);
+      L.circleMarker(pl,{radius:4,color:"#fde047",weight:2,fillColor:"#0f172a",fillOpacity:1}).bindTooltip("Pole · #"+esc(r.serial)).addTo(markerLayer); } });
 }
 function pinIcon(col){ return L.divIcon({className:"",iconSize:[24,24],iconAnchor:[12,12],html:'<div style="width:20px;height:20px;border-radius:50%;background:'+col+';border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.4)"></div>'}); }
 function setActivePoint(lat,lng,acc,manual,noZoom){
@@ -1173,7 +1425,7 @@ function setActivePoint(lat,lng,acc,manual,noZoom){
   if(!active){
     activeCircle=L.circle([lat,lng],{radius:manual?0:(acc||10),color:col,weight:1,fillColor:col,fillOpacity:.12}).addTo(map);
     active=L.marker([lat,lng],{draggable:true,icon:pinIcon(col),zIndexOffset:1000}).addTo(map);
-    active.on("drag",e=>activeCircle.setLatLng(e.target.getLatLng()));
+    active.on("drag",e=>{ activeCircle.setLatLng(e.target.getLatLng()); drawLink(); });
     active.on("dragend",e=>{ const p=e.target.getLatLng(); manualPoint(p.lat,p.lng); });
     map.setView([lat,lng],Math.max(map.getZoom(),18));
   } else {
@@ -1181,15 +1433,45 @@ function setActivePoint(lat,lng,acc,manual,noZoom){
     activeCircle.setLatLng([lat,lng]).setRadius(manual?0:(acc||10)).setStyle({color:col,fillColor:col,fillOpacity:manual?0:.12});
     if(!noZoom) map.panTo([lat,lng]);
   }
+  drawLink();
 }
-function clearActive(){ if(active){ map.removeLayer(active); active=null; } if(activeCircle){ map.removeLayer(activeCircle); activeCircle=null; } }
+function clearActive(){ if(active){ map.removeLayer(active); active=null; } if(activeCircle){ map.removeLayer(activeCircle); activeCircle=null; } drawLink(); }
+function poleIcon(col){ return L.divIcon({className:"",iconSize:[26,26],iconAnchor:[13,13],html:'<div style="width:20px;height:20px;border-radius:4px;background:#0f172a;border:3px solid '+col+';box-shadow:0 2px 6px rgba(0,0,0,.45);color:#fde047;font:900 12px/20px sans-serif;text-align:center">⚡</div>'}); }
+function setPolePoint(lat,lng,acc,manual,noZoom){
+  if(!map) return; const col=manual?"#60a5fa":gradeColor(grade(acc));
+  if(!poleMk){
+    poleMk=L.marker([lat,lng],{draggable:true,icon:poleIcon(col),zIndexOffset:900}).addTo(map).bindTooltip("Service pole");
+    poleMk.on("drag",()=>drawLink());
+    poleMk.on("dragend",e=>{ const p=e.target.getLatLng(); manualPole(p.lat,p.lng); });
+    if(!noZoom) map.setView([lat,lng],Math.max(map.getZoom(),18));
+  } else { poleMk.setLatLng([lat,lng]).setIcon(poleIcon(col)); if(!noZoom) map.panTo([lat,lng]); }
+  drawLink();
+}
+function fitPair(){ if(!map) return; const a=active&&active.getLatLng(), b=poleMk&&poleMk.getLatLng(); if(a&&b) map.fitBounds(L.latLngBounds([a,b]).pad(1.2),{maxZoom:18}); else if(a||b) map.setView(a||b,Math.max(map.getZoom(),18)); }
+function clearPole(){ if(poleMk){ map.removeLayer(poleMk); poleMk=null; } drawLink(); }
+function poleLatLng(r){ if(r.poleLat!=null&&r.poleLng!=null) return [r.poleLat,r.poleLng]; const e=parseFloat(r.poleX),n=parseFloat(r.poleY); if(!isFinite(e)||!isFinite(n)) return null; const p=tmToWgs84(e,n); return [p.lat,p.lon]; }
+function drawLink(){
+  if(!map) return;
+  const a=active&&active.getLatLng(), b=poleMk&&poleMk.getLatLng();
+  if(!a||!b){ if(poleLink){ map.removeLayer(poleLink); poleLink=null; } return; }
+  const d=hzDist(); const lbl=d!=null?d.toFixed(1)+" m":"";
+  if(!poleLink) poleLink=L.polyline([a,b],{color:"#fde047",weight:3,dashArray:"6 6"}).addTo(map).bindTooltip(lbl,{permanent:true,direction:"top",offset:[0,-14],opacity:.85});
+  else { poleLink.setLatLngs([a,b]); poleLink.setTooltipContent(lbl); }
+}
 function manualPoint(lat,lng){
   if(cap) finishCapture(false);
   const t=wgs84ToTM(lat,lng);
   Object.assign(form,{lat,lng,x:t.e.toFixed(2),y:t.n.toFixed(2),manual:true,accuracy:null,samples:0,gpsSource:"Manual"});
-  setActivePoint(lat,lng,null,true,true); renderPoint(); checkDup(); autoAdmin(); suggestTx();
+  setActivePoint(lat,lng,null,true,true); renderPoint(); checkDup(); autoAdmin(); suggestTx(); updateSC(true);
 }
-function toggleTap(){ tapMode=!tapMode; $("tapBtn").classList.toggle("on",tapMode); $("tapBtn").textContent=tapMode?"✋ Tap-to-set: ON":"✋ Tap-to-set"; toast(tapMode?"Tap the map to place the point":"Tap-to-set off","info"); }
+function toggleTap(target){
+  const want = target===false ? false : (target==="pole" ? "pole" : "house");
+  tapMode = (target===false || tapMode===want) ? false : want;
+  $("tapBtn").classList.toggle("on",tapMode==="house"); $("tapBtn").textContent=tapMode==="house"?"✋ Tap-to-set: ON":"✋ Tap-to-set";
+  $("pTapBtn").classList.toggle("on",tapMode==="pole"); $("pTapBtn").textContent=tapMode==="pole"?"✋ Tap the map for the pole":"✋ Place pole on map";
+  if(target!==false) toast(tapMode==="pole"?"Tap the map at the service pole":tapMode?"Tap the map at the customer's house":"Tap-to-set off","info");
+  if(tapMode==="pole"){ initMap(); $("map").scrollIntoView({behavior:"smooth",block:"center"}); }
+}
 function fitPoints(){
   if(!map) return; const lls=records.map(recLatLng).filter(Boolean); if(active) lls.push(active.getLatLng());
   if(lls.length) map.fitBounds(L.latLngBounds(lls).pad(.25),{maxZoom:18}); else if(live) map.setView([live.lat,live.lng],16); else map.setView(RW_CENTER,11);
@@ -1226,7 +1508,7 @@ if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWo
 /* ---------- init ---------- */
 $("agentChip").textContent="👤 "+(agent||"Set agent");
 form.serial=String(nextSerial());
-persist(); writeForm(); updateNet(); setView("form");
+persist(); writeForm(); updateNet(); setView("form"); renderReserve();
 startWatch();
 if(!agent) askAgent(false);
 renderSync(); syncSoon(3000);
