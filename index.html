@@ -91,6 +91,22 @@
   .row2 .btn{flex:1}
   /* ---------- map ---------- */
   #map{height:240px;border-top:1px solid var(--line);background:#e2e8f0;z-index:1}
+  #mapWrap{position:relative}
+  #mapWrap.fs{position:fixed;inset:0;z-index:50;background:#0f172a;display:flex;flex-direction:column}
+  #mapWrap.fs #map{flex:1;height:auto;border:0}
+  body.mapfs{overflow:hidden}
+  #fsTools{display:none}
+  #mapWrap.fs #fsTools{display:block;background:rgba(15,23,42,.94);color:#fff;padding:calc(8px + var(--safe-t)) 10px 8px}
+  #fsTools .r{display:flex;gap:6px}
+  #fsTools button{flex:1;border:1.5px solid #475569;background:#1e293b;color:#fff;border-radius:10px;padding:9px 6px;font-size:13px;font-weight:800}
+  #fsTools button.on{background:#fde047;color:#0f172a;border-color:#fde047}
+  #fsInfo{font-size:13px;margin-top:7px;line-height:1.35}
+  #fsInfo b{color:#fde047;font-size:15px}
+  #fsSave{display:none}
+  #mapWrap.fs #fsSave{display:flex;gap:8px;padding:8px 10px calc(8px + var(--safe-b));background:rgba(15,23,42,.94)}
+  #fsSave button{flex:1;border:0;border-radius:12px;padding:13px;font-size:15px;font-weight:800}
+  .fsbtn{position:absolute;right:10px;bottom:28px;z-index:500;border:0;border-radius:10px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.35);font-size:20px;width:44px;height:44px}
+  #mapWrap.fs .fsbtn{display:none}
   .mapbar{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px}
   .mapbar button{border:1.5px solid #cbd5e1;background:#fff;color:#334155;border-radius:9px;padding:7px 10px;font-size:12.5px;font-weight:700}
   .mapbar button.on{background:var(--ink2);color:#fff;border-color:var(--ink2)}
@@ -222,12 +238,29 @@
       <div class="mapbar">
         <button onclick="locateMe()">◎ Me</button>
         <button onclick="fitPoints()">⤢ Fit</button>
+        <button onclick="mapFull(true)">⛶ Full screen · edit</button>
         <button id="tapBtn" onclick="toggleTap()">✋ Tap-to-set</button>
         <button id="dlBtn" onclick="saveAreaOffline()">⬇ Save map offline</button>
         <span class="netpill" id="netPill">…</span>
       </div>
       <div class="dlbar hidden" id="dlbar"><div id="dlfill"></div></div>
-      <div id="map"></div>
+      <div id="mapWrap">
+        <div id="fsTools">
+          <div class="r">
+            <button id="fsHouse" onclick="fsPlace('house')">🏠 Move house</button>
+            <button id="fsPole" onclick="fsPlace('pole')">⚡ Move pole</button>
+            <button onclick="fitPair(true)">⤢ Fit</button>
+            <button onclick="mapFull(false)" style="flex:0 0 52px">✕</button>
+          </div>
+          <div id="fsInfo"></div>
+        </div>
+        <div id="map"></div>
+        <button class="fsbtn" onclick="mapFull(true)" title="Full-screen map for editing">⛶</button>
+        <div id="fsSave">
+          <button style="background:#334155;color:#fff;flex:0 0 34%" onclick="mapFull(false)">Close</button>
+          <button style="background:#0369a1;color:#fff" id="fsSaveBtn" onclick="mapFull(false);saveRecord()">💾 Save</button>
+        </div>
+      </div>
     </div>
 
     <div class="card" id="poleCard">
@@ -373,7 +406,7 @@
         <button class="btn ghost hidden" id="installBtn" onclick="doInstall()">⤓ Install on this phone</button>
         <button class="btn ghost" onclick="prepareOCR(true)">🪪 Prepare ID-card reader for offline use</button>
         <div class="about"><div class="mono">WK</div><div><b>Ir Wilbert KIRARA</b><span>Expert Surveyor in Electrical Power Lines<br>Creator of WK Connect Survey</span></div></div>
-        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v3.0 · project: Nyanza · © 2026 Ir Wilbert KIRARA</div>
+        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v3.1 · project: Nyanza · © 2026 Ir Wilbert KIRARA</div>
       </div>
     </div>
   </section>
@@ -688,7 +721,7 @@ function hzDist(){
 const autoSC = hz => (Math.round((hz+SC_ADD)*10)/10).toFixed(1);
 // reset=true when a position changed: the automatic value replaces any typed value
 function updateSC(reset){
-  const hz=hzDist(), box=$("scBox"); drawLink();
+  const hz=hzDist(), box=$("scBox"); drawLink(); setTimeout(renderFsInfo,0);
   if(hz==null){ form.poleDist=""; box.className="scbox miss"; box.textContent="SC length: capture the house and the pole."; return; }
   form.poleDist=hz.toFixed(1);
   if(reset) form.scManual=false;
@@ -761,7 +794,7 @@ function clearForm(ask){
   if(ask && (formPhoto || form.x || $("f-firstName").value || $("f-lastName").value) && !confirm("Clear this entry?")) return;
   if(cap) finishCapture(false);
   form=blank(); form.serial=String(nextSerial()); editingId=null; formPhoto=null; showPhoto(null); $("txQ").value="";
-  if(map){ clearActive(); clearPole(); } writeForm(); window.scrollTo(0,0);
+  if(map){ clearActive(); clearPole(); drawMarkers(); } writeForm(); window.scrollTo(0,0);
 }
 
 /* ---------- cascading admin ---------- */
@@ -837,10 +870,10 @@ async function editRecord(id){
   if(cap) finishCapture(false);
   form=Object.assign(blank(),r); editingId=id;
   formPhoto=await photoGet(id); showPhoto(formPhoto);
-  writeForm(); setView("form");
+  writeForm(); setView("form"); drawMarkers(); if(map) map.closePopup();
   const ll=recLatLng(r), pl=poleLatLng(r);
   if(map){ clearActive(); clearPole(); }
-  if(map&&ll) setTimeout(()=>{ map.invalidateSize(); setActivePoint(ll[0],ll[1],r.accuracy,!!r.manual); if(pl) setPolePoint(pl[0],pl[1],r.poleAccuracy,!!r.poleManual,true); drawLink(); if(pl) fitPair(); else map.setView(ll,18); },80);
+  if(map&&ll) setTimeout(()=>{ map.invalidateSize(); setActivePoint(ll[0],ll[1],r.accuracy,!!r.manual); if(pl) setPolePoint(pl[0],pl[1],r.poleAccuracy,!!r.poleManual,true); drawLink(); if(pl) fitPair(true); else map.setView(ll,19); },80);
 }
 async function removeRecord(id){
   const r=records.find(x=>x._id===id); if(!r) return;
@@ -1397,35 +1430,37 @@ function toast(m,k){ const t=$("toast"); t.className=k||"ok"; t.textContent=m; c
    MAP
    ===================================================================== */
 let map=null, markerLayer=null, meMarker=null, active=null, activeCircle=null, tapMode=false, poleMk=null, poleLink=null;
-const RW_CENTER=[-2.35,29.74];
+const RW_CENTER=[-2.35,29.74], SAT_NATIVE=18;
 function initMap(){
   if(map||typeof L==="undefined") return;
-  const sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagery © Esri"});
-  const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"});
-  map=L.map("map",{center:RW_CENTER,zoom:11,layers:[sat]});
+  // Imagery stops at level 18 in most of Nyanza; above that the level-18 tiles are enlarged instead of a blank "no data" tile.
+  const sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:22,maxNativeZoom:SAT_NATIVE,attribution:"Imagery © Esri"});
+  const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:22,maxNativeZoom:19,attribution:"© OpenStreetMap"});
+  map=L.map("map",{center:RW_CENTER,zoom:11,maxZoom:22,layers:[sat]});
   villLayer=L.layerGroup().addTo(map);
   L.control.layers({"Satellite":sat,"Streets":osm},{"Village boundaries & names":villLayer},{position:"topright"}).addTo(map);
   map.on("moveend zoomend",drawVillages); map.on("overlayadd overlayremove",drawVillages);
   markerLayer=L.layerGroup().addTo(map);
-  map.on("click",e=>{ if(tapMode==="pole") manualPole(e.latlng.lat,e.latlng.lng); else if(tapMode) manualPoint(e.latlng.lat,e.latlng.lng); });
+  map.on("click",e=>{ const t=tapMode; if(t==="pole") manualPole(e.latlng.lat,e.latlng.lng); else if(t) manualPoint(e.latlng.lat,e.latlng.lng);
+    if(t && fsOn){ toggleTap(false); fsPlaceUI(); renderFsInfo(); } });
   drawMarkers(); drawVillages(); setTimeout(()=>{ map.invalidateSize(); fitPoints(); },80);
 }
 function drawMarkers(){
   if(!markerLayer) return; markerLayer.clearLayers();
-  records.forEach(r=>{ const ll=recLatLng(r); if(!ll) return;
+  records.forEach(r=>{ if(r._id===editingId) return; const ll=recLatLng(r); if(!ll) return;
     const col=r.manual?"#2563eb":gradeColor(grade(r.accuracy));
     L.circleMarker(ll,{radius:7,color:"#fff",weight:2,fillColor:col,fillOpacity:1})
-      .bindPopup("<b>#"+esc(r.serial)+" · "+esc([r.firstName,r.lastName].filter(Boolean).join(" "))+"</b><br>E "+esc(r.x)+"  N "+esc(r.y)+(r.accuracy!=null?" (±"+r.accuracy+" m)":"")+(r.meter?"<br>Meter "+esc(r.meter):"")+(r.scLength?"<br>SC "+esc(r.scLength)+" m":"")).addTo(markerLayer);
+      .bindPopup("<b>#"+esc(r.serial)+" · "+esc([r.firstName,r.lastName].filter(Boolean).join(" "))+"</b><br>E "+esc(r.x)+"  N "+esc(r.y)+(r.accuracy!=null?" (±"+r.accuracy+" m)":"")+(r.meter?"<br>Meter "+esc(r.meter):"")+(r.scLength?"<br>SC "+esc(r.scLength)+" m":"")+"<br><button onclick=\"editRecord('"+r._id+"')\" style='margin-top:6px;border:0;border-radius:8px;background:#0369a1;color:#fff;padding:6px 10px;font-weight:700'>✎ Edit this record</button>").addTo(markerLayer);
     const pl=poleLatLng(r); if(pl){ L.polyline([pl,ll],{color:"#fde047",weight:1.5,opacity:.8}).addTo(markerLayer);
       L.circleMarker(pl,{radius:4,color:"#fde047",weight:2,fillColor:"#0f172a",fillOpacity:1}).bindTooltip("Pole · #"+esc(r.serial)).addTo(markerLayer); } });
 }
-function pinIcon(col){ return L.divIcon({className:"",iconSize:[24,24],iconAnchor:[12,12],html:'<div style="width:20px;height:20px;border-radius:50%;background:'+col+';border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.4)"></div>'}); }
+function pinIcon(col){ return L.divIcon({className:"",iconSize:[30,30],iconAnchor:[15,15],html:'<div style="width:24px;height:24px;margin:3px;border-radius:50%;background:'+col+';border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.4);font-size:12px;line-height:18px;text-align:center">🏠</div>'}); }
 function setActivePoint(lat,lng,acc,manual,noZoom){
   if(!map) return; const col=manual?"#2563eb":gradeColor(grade(acc));
   if(!active){
     activeCircle=L.circle([lat,lng],{radius:manual?0:(acc||10),color:col,weight:1,fillColor:col,fillOpacity:.12}).addTo(map);
     active=L.marker([lat,lng],{draggable:true,icon:pinIcon(col),zIndexOffset:1000}).addTo(map);
-    active.on("drag",e=>{ activeCircle.setLatLng(e.target.getLatLng()); drawLink(); });
+    active.on("drag",e=>{ activeCircle.setLatLng(e.target.getLatLng()); drawLink(); liveDrag(); });
     active.on("dragend",e=>{ const p=e.target.getLatLng(); manualPoint(p.lat,p.lng); });
     map.setView([lat,lng],Math.max(map.getZoom(),18));
   } else {
@@ -1436,25 +1471,47 @@ function setActivePoint(lat,lng,acc,manual,noZoom){
   drawLink();
 }
 function clearActive(){ if(active){ map.removeLayer(active); active=null; } if(activeCircle){ map.removeLayer(activeCircle); activeCircle=null; } drawLink(); }
-function poleIcon(col){ return L.divIcon({className:"",iconSize:[26,26],iconAnchor:[13,13],html:'<div style="width:20px;height:20px;border-radius:4px;background:#0f172a;border:3px solid '+col+';box-shadow:0 2px 6px rgba(0,0,0,.45);color:#fde047;font:900 12px/20px sans-serif;text-align:center">⚡</div>'}); }
+function poleIcon(col){ return L.divIcon({className:"",iconSize:[30,30],iconAnchor:[15,15],html:'<div style="width:24px;height:24px;margin:3px;border-radius:4px;background:#0f172a;border:3px solid '+col+';box-shadow:0 2px 6px rgba(0,0,0,.45);color:#fde047;font:900 13px/24px sans-serif;text-align:center">⚡</div>'}); }
 function setPolePoint(lat,lng,acc,manual,noZoom){
   if(!map) return; const col=manual?"#60a5fa":gradeColor(grade(acc));
   if(!poleMk){
     poleMk=L.marker([lat,lng],{draggable:true,icon:poleIcon(col),zIndexOffset:900}).addTo(map).bindTooltip("Service pole");
-    poleMk.on("drag",()=>drawLink());
+    poleMk.on("drag",()=>{ drawLink(); liveDrag(); });
     poleMk.on("dragend",e=>{ const p=e.target.getLatLng(); manualPole(p.lat,p.lng); });
     if(!noZoom) map.setView([lat,lng],Math.max(map.getZoom(),18));
   } else { poleMk.setLatLng([lat,lng]).setIcon(poleIcon(col)); if(!noZoom) map.panTo([lat,lng]); }
   drawLink();
 }
-function fitPair(){ if(!map) return; const a=active&&active.getLatLng(), b=poleMk&&poleMk.getLatLng(); if(a&&b) map.fitBounds(L.latLngBounds([a,b]).pad(1.2),{maxZoom:18}); else if(a||b) map.setView(a||b,Math.max(map.getZoom(),18)); }
+function fitPair(close){ if(!map) return; const a=active&&active.getLatLng(), b=poleMk&&poleMk.getLatLng(); if(a&&b) map.fitBounds(L.latLngBounds([a,b]).pad(close?0.6:1.2),{maxZoom:close?20:19}); else if(a||b) map.setView(a||b,Math.max(map.getZoom(),close?20:18)); }
+
+/* ---------- full-screen map for editing the house and pole positions ---------- */
+let fsOn=false;
+function mapFull(on){
+  initMap(); if(!map) return;
+  if(on===fsOn) return; fsOn=on;
+  $("mapWrap").classList.toggle("fs",on); document.body.classList.toggle("mapfs",on);
+  if(on){ try{ history.pushState({mapfs:1},""); }catch(e){} $("fsSaveBtn").textContent=editingId?"💾 Update record":"💾 Save"; }
+  else { if(tapMode) toggleTap(false); fsPlaceUI(); if(history.state&&history.state.mapfs) try{ history.back(); }catch(e){} }
+  setTimeout(()=>{ map.invalidateSize(); if(on) fitPair(true); },80);
+  renderFsInfo();
+}
+addEventListener("popstate",()=>{ if(fsOn){ fsOn=false; $("mapWrap").classList.remove("fs"); document.body.classList.remove("mapfs"); if(tapMode) toggleTap(false); setTimeout(()=>map&&map.invalidateSize(),80); } });
+function fsPlace(t){ toggleTap(t); fsPlaceUI(); renderFsInfo(); }
+function fsPlaceUI(){ $("fsHouse").classList.toggle("on",tapMode==="house"); $("fsPole").classList.toggle("on",tapMode==="pole"); }
+function renderFsInfo(){
+  const el=$("fsInfo"); if(!el) return; const hz=hzDist();
+  const hint = tapMode==="house" ? "Tap the map exactly on the house." : tapMode==="pole" ? "Tap the map exactly on the pole." : "Drag 🏠 the house or ⚡ the pole, or tap Move house / Move pole then tap the map.";
+  el.innerHTML=(hz!=null ? "Hz distance <b>"+hz.toFixed(1)+" m</b> · SC <b>"+esc(form.scLength||autoSC(hz))+" m</b>"+(form.scManual?" (typed)":"") : "Place the house and the pole to get the distance.")+"<br><span style='color:#cbd5e1'>"+hint+"</span>";
+}
 function clearPole(){ if(poleMk){ map.removeLayer(poleMk); poleMk=null; } drawLink(); }
 function poleLatLng(r){ if(r.poleLat!=null&&r.poleLng!=null) return [r.poleLat,r.poleLng]; const e=parseFloat(r.poleX),n=parseFloat(r.poleY); if(!isFinite(e)||!isFinite(n)) return null; const p=tmToWgs84(e,n); return [p.lat,p.lon]; }
+function liveDrag(){ if(!fsOn||!active||!poleMk) return; const a=active.getLatLng(), b=poleMk.getLatLng(), p=wgs84ToTM(a.lat,a.lng), q=wgs84ToTM(b.lat,b.lng), hz=Math.hypot(p.e-q.e,p.n-q.n);
+  $("fsInfo").innerHTML="Hz distance <b>"+hz.toFixed(1)+" m</b> · SC <b>"+autoSC(hz)+" m</b><br><span style='color:#cbd5e1'>Release to place.</span>"; }
 function drawLink(){
   if(!map) return;
   const a=active&&active.getLatLng(), b=poleMk&&poleMk.getLatLng();
   if(!a||!b){ if(poleLink){ map.removeLayer(poleLink); poleLink=null; } return; }
-  const d=hzDist(); const lbl=d!=null?d.toFixed(1)+" m":"";
+  const pa=wgs84ToTM(a.lat,a.lng), pb=wgs84ToTM(b.lat,b.lng), d=Math.hypot(pa.e-pb.e,pa.n-pb.n); const lbl=d.toFixed(1)+" m";
   if(!poleLink) poleLink=L.polyline([a,b],{color:"#fde047",weight:3,dashArray:"6 6"}).addTo(map).bindTooltip(lbl,{permanent:true,direction:"top",offset:[0,-14],opacity:.85});
   else { poleLink.setLatLngs([a,b]); poleLink.setTooltipContent(lbl); }
 }
@@ -1487,7 +1544,7 @@ function lat2tile(lat,z){ return Math.floor((1-Math.log(Math.tan(lat*Math.PI/180
 async function saveAreaOffline(){
   if(!map) return; if(!navigator.onLine) return toast("Go online first to download map tiles","err");
   const b=map.getBounds(), z0=Math.max(1,Math.round(map.getZoom())), urls=[];
-  [z0,z0+1,z0+2].filter(z=>z<=19).forEach(z=>{ for(let x=lon2tile(b.getWest(),z);x<=lon2tile(b.getEast(),z);x++) for(let y=lat2tile(b.getNorth(),z);y<=lat2tile(b.getSouth(),z);y++) urls.push("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/"+z+"/"+y+"/"+x); });
+  [...new Set([z0,z0+1,z0+2].map(z=>Math.min(z,SAT_NATIVE)))].forEach(z=>{ for(let x=lon2tile(b.getWest(),z);x<=lon2tile(b.getEast(),z);x++) for(let y=lat2tile(b.getNorth(),z);y<=lat2tile(b.getSouth(),z);y++) urls.push("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/"+z+"/"+y+"/"+x); });
   if(urls.length>1500) return toast("Area too large — zoom in","err");
   const bar=$("dlbar"), fillb=$("dlfill"); bar.classList.remove("hidden"); $("dlBtn").disabled=true;
   let done=0, ok=0; const cache=("caches" in window)?await caches.open("asbuilt-tiles-v1"):null;
