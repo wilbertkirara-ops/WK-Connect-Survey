@@ -83,12 +83,13 @@ function findRow_(sh, id) {
   return 0;
 }
 
+// Drive name lookups also return items in the trash: always skip those.
+function live_(it) { while (it.hasNext()) { const f = it.next(); if (!f.isTrashed()) return f; } return null; }
+
 function folder_(sector) {
-  const it = DriveApp.getFoldersByName(ROOT_FOLDER);
-  const root = it.hasNext() ? it.next() : DriveApp.createFolder(ROOT_FOLDER);
+  const root = live_(DriveApp.getFoldersByName(ROOT_FOLDER)) || DriveApp.createFolder(ROOT_FOLDER);
   const name = sector || 'No sector';
-  const sub = root.getFoldersByName(name);
-  return sub.hasNext() ? sub.next() : root.createFolder(name);
+  return live_(root.getFoldersByName(name)) || root.createFolder(name);
 }
 
 function colIdx_(key) { return COLS.findIndex(c => c[0] === key); }
@@ -156,8 +157,7 @@ function markDirty_(tx) {
 }
 
 function reserveFolder_() {
-  const it = DriveApp.getFoldersByName(RESERVE_FOLDER);
-  return it.hasNext() ? it.next() : DriveApp.createFolder(RESERVE_FOLDER);
+  return live_(DriveApp.getFoldersByName(RESERVE_FOLDER)) || DriveApp.createFolder(RESERVE_FOLDER);
 }
 
 function readRecords_() {
@@ -209,9 +209,8 @@ function photoName_(r) {
 
 function writeReserve_(folder, tx, list) {
   const name = 'RESERVE - ' + (tx || 'No transformer');
-  const files = folder.getFilesByName(name);
-  let ss = null;
-  if (files.hasNext()) ss = SpreadsheetApp.openById(files.next().getId());
+  const file = live_(folder.getFilesByName(name));
+  let ss = file ? SpreadsheetApp.openById(file.getId()) : null;
   if (!list.length) {                       // transformer emptied (records moved or deleted)
     if (ss) DriveApp.getFileById(ss.getId()).setTrashed(true);
     return '';
