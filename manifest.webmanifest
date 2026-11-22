@@ -1,7 +1,7 @@
 {
   "name": "WK Connect Survey",
   "short_name": "WK Connect",
-  "description": "WK Connect Survey by Ir Wilbert KIRARA, Expert Surveyor in Electrical Power Lines — Nyanza as-built customer connections: satellite GPS (TM Rwanda), house photos, Excel/ZIP export.",
+  "description": "WK Connect Survey by Eng. Wilbert KIRARA, Expert Surveyor in Electrical Power Lines — Nyanza as-built customer connections: satellite GPS (TM Rwanda), house photos, Excel/ZIP export.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

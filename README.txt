@@ -1,7 +1,7 @@
 WK CONNECT SURVEY v2 — NYANZA (installable phone app / PWA)
 ==========================================================
-Created by Ir Wilbert KIRARA, Expert Surveyor in Electrical Power Lines.
-© 2026 Ir Wilbert KIRARA. All rights reserved.
+Created by Eng. Wilbert KIRARA, Expert Surveyor in Electrical Power Lines.
+© 2026 Eng. Wilbert KIRARA. All rights reserved.
 Live: https://wilbertkirara-ops.github.io/WK-Connect-Survey/
 Keep ALL files together (index.html, sw.js, manifest, icons, leaflet/, rw-admin.js,
 exceljs.min.js, jszip.min.js, nyanza-template.xlsx).

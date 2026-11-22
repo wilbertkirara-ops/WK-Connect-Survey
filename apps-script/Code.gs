@@ -1,6 +1,6 @@
 /**
  * WK Connect Survey — Nyanza : synchronisation server (Google Apps Script)
- * (c) 2026 Ir Wilbert KIRARA — all rights reserved.
+ * (c) 2026 Eng. Wilbert KIRARA — all rights reserved.
  * -----------------------------------------------------------------------
  * Receives records + house photos from the phones and stores them in:
  *   - the Google Sheet SHEET_ID (tab "Records", one row per customer, updated in place)
