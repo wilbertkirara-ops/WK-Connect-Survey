@@ -172,6 +172,11 @@
   .credit b{color:#334155}
   .about{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fff;border-radius:12px;padding:14px}
   .about .mono{width:46px;height:46px;border-radius:50%;background:#0ea5e9;display:grid;place-items:center;font-weight:800;font-size:17px;flex:0 0 auto;letter-spacing:.02em}
+  .wkav{border-radius:50%;object-fit:cover;flex:0 0 auto;background:#1e3a5f}
+  .hav{width:38px;height:38px;border:2px solid #7dd3fc}
+  .about .wkav{width:64px;height:64px;border:3px solid #f5be1e;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  .credit .wkav{width:22px;height:22px;vertical-align:middle;margin-right:6px;border:1px solid #cbd5e1}
+  .mav{display:block;width:72px;height:72px;margin:0 auto 6px;border:3px solid #0ea5e9}
   .about b{display:block;font-size:15px}
   .about span{font-size:12.5px;color:#cbd5e1}
   .hidden{display:none!important}
@@ -182,7 +187,7 @@
 
 <header>
   <div class="hrow">
-    <div class="brand">WK Connect Survey<small>NYANZA · AS-BUILT CUSTOMER CONNECTIONS</small><small style="color:#7dd3fc;letter-spacing:0">by Eng. Wilbert KIRARA</small></div>
+    <img class="wkav hav" src="wk-photo.jpg" alt="Eng. Wilbert KIRARA" width="38" height="38"><div class="brand">WK Connect Survey<small>NYANZA · AS-BUILT CUSTOMER CONNECTIONS</small><small style="color:#7dd3fc;letter-spacing:0">by Eng. Wilbert KIRARA</small></div>
     <span style="margin-left:auto"></span>
     <button class="sync off" id="syncChip" onclick="syncNow(true)">☁ off</button>
     <button class="agent" id="agentChip" onclick="askAgent(true)">👤 —</button>
@@ -405,13 +410,13 @@
       <div class="pad exp">
         <button class="btn ghost hidden" id="installBtn" onclick="doInstall()">⤓ Install on this phone</button>
         <button class="btn ghost" onclick="prepareOCR(true)">🪪 Prepare ID-card reader for offline use</button>
-        <div class="about"><div class="mono">WK</div><div><b>Eng. Wilbert KIRARA</b><span>Expert Surveyor in Electrical Power Lines<br>Creator of WK Connect Survey</span></div></div>
-        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v3.2 · project: Nyanza · © 2026 Eng. Wilbert KIRARA</div>
+        <div class="about"><img class="wkav" src="wk-photo.jpg" alt="Eng. Wilbert KIRARA" width="64" height="64"><div><b>Eng. Wilbert KIRARA</b><span>Expert Surveyor in Electrical Power Lines<br>Creator of WK Connect Survey</span></div></div>
+        <div style="font-size:12px;color:var(--muted)">WK Connect Survey · v3.3 · project: Nyanza · © 2026 Eng. Wilbert KIRARA</div>
       </div>
     </div>
   </section>
 </main>
-<div class="credit">WK Connect Survey · created by <b>Eng. Wilbert KIRARA</b> · Expert Surveyor in Electrical Power Lines</div>
+<div class="credit"><img class="wkav" src="wk-photo.jpg" alt="" width="22" height="22">WK Connect Survey · created by <b>Eng. Wilbert KIRARA</b> · Expert Surveyor in Electrical Power Lines</div>
 
 <div class="savebar" id="savebar">
   <div class="in">
@@ -426,7 +431,7 @@
     <p>Enter your full name. It is recorded on every entry and in the report.</p>
     <input id="agentIn" placeholder="e.g. Jean Uwimana" autocapitalize="words" style="margin-bottom:14px">
     <button class="btn pri w100" onclick="saveAgent()">Continue</button>
-    <div style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:12px">WK Connect Survey — created by <b>Eng. Wilbert KIRARA</b>,<br>Expert Surveyor in Electrical Power Lines</div>
+    <div style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:14px"><img class="wkav mav" src="wk-photo.jpg" alt="Eng. Wilbert KIRARA" width="72" height="72">WK Connect Survey — created by <b>Eng. Wilbert KIRARA</b>,<br>Expert Surveyor in Electrical Power Lines</div>
   </div>
 </div>
 

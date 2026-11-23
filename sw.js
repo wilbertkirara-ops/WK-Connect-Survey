@@ -1,5 +1,5 @@
 // As-Built Collection service worker — offline app shell.
-const CACHE = "asbuilt-v22";
+const CACHE = "asbuilt-v23";
 const ASSETS = [
   "./",
   "./index.html",
@@ -9,6 +9,7 @@ const ASSETS = [
   "./icon-maskable-512.png",
   "./apple-touch-icon.png",
   "./favicon-32.png",
+  "./wk-photo.jpg",
   "./rw-admin.js",
   "./nyanza-transformers.js",
   "./nyanza-villages.js",
